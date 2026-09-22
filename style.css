@@ -1,0 +1,33 @@
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+body { background: #f0f4f8; color: #333; }
+.login-fondo { background: linear-gradient(135deg, #1e3a5f, #2e5a8f); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+.contenedor { max-width: 1400px; margin: 0 auto; padding: 20px; }
+.contenedor-login { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
+
+h1, h2 { margin-bottom: 20px; color: #1e3a5f; }
+h3 { margin: 25px 0 15px; color: #2e5a8f; }
+
+.grupo { margin-bottom: 15px; }
+label { display: block; margin-bottom: 5px; font-weight: 500; }
+input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+
+button { padding: 10px 20px; background: #2e7d32; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; margin: 5px; }
+button:hover { background: #27652b; }
+button.secundario { background: #666; }
+button.salir { background: #d32f2f; float: right; }
+button.guardar { padding: 5px 10px; font-size: 14px; }
+
+.error { color: #d32f2f; margin-top: 10px; }
+
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.tabla-contenedor { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+th { background: #1e3a5f; color: white; }
+
+.carga-excel { background: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
+.leyenda-colores { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+.leyenda-colores span { padding: 5px 12px; border-radius: 4px; font-size: 13px; }
+.botones { margin-top: 25px; text-align: center; }

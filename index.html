@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicio de Sesión — Isertel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="login-fondo">
+  <div class="contenedor-login">
+    <h2>🔐 Acceso al Sistema de Gestión</h2>
+    <form id="formLogin">
+      <div class="grupo">
+        <label>Usuario:</label>
+        <input type="text" id="usuario" required>
+      </div>
+      <div class="grupo">
+        <label>Contraseña:</label>
+        <input type="password" id="clave" required>
+      </div>
+      <button type="submit">Ingresar</button>
+      <p id="mensajeError" class="error"></p>
+    </form>
+  </div>
+
+  <script>
+    const URL_BACKEND = 'https://tu-backend.onrender.com'; // Reemplaza con tu URL
+
+    document.getElementById('formLogin').addEventListener('submit', async e => {
+      e.preventDefault();
+      const usuario = document.getElementById('usuario').value;
+      const clave = document.getElementById('clave').value;
+
+      const res = await fetch(`${URL_BACKEND}/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ usuario, clave })
+      });
+
+      if (res.ok) {
+        const { perfil, nombre } = await res.json();
+        localStorage.setItem('perfil', perfil);
+        localStorage.setItem('usuario', nombre);
+        localStorage.setItem('horaInicio', new Date().toISOString());
+        window.location.href = 'confirmacion.html';
+      } else {
+        document.getElementById('mensajeError').textContent = 'Usuario o clave incorrectos';
+      }
+    });
+  </script>
+</body>
+</html>

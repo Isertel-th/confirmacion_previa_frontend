@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Administrativo — Isertel</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="contenedor">
+    <header>
+      <h1>⚙️ Gestión Completa del Sistema</h1>
+      <button onclick="cerrarSesion()" class="salir">Salir</button>
+    </header>
+
+    <section class="carga-excel">
+      <h3>📤 Cargar Archivos Excel</h3>
+      <p>Selecciona el archivo correspondiente para actualizar la base de datos</p>
+      
+      <label>Base de Datos Principal:</label>
+      <input type="file" id="archivoBase" accept=".xlsx">
+      <button onclick="subirArchivo('base')">Subir Base</button>
+
+      <label>Lista Operadores:</label>
+      <input type="file" id="archivoOp" accept=".xlsx">
+      <button onclick="subirArchivo('operadores')">Subir Operadores</button>
+
+      <label>Lista Observaciones:</label>
+      <input type="file" id="archivoObs" accept=".xlsx">
+      <button onclick="subirArchivo('observaciones')">Subir Observaciones</button>
+    </section>
+
+    <h3>📊 Historial Completo de Registros</h3>
+    <div class="leyenda-colores">
+      <span>Leyenda de lotes:</span>
+      <span style="background:#e3f2fd">Lote 1</span>
+      <span style="background:#c8e6c9">Lote 2</span>
+      <span style="background:#fff9c4">Lote 3</span>
+      <span style="background:#f8bbd9">Lote 4</span>
+    </div>
+
+    <div class="tabla-contenedor">
+      <table>
+        <thead>
+          <tr>
+            <th>Tarea</th>
+            <th>Orden</th>
+            <th>Ciudad</th>
+            <th>Operador</th>
+            <th>Observación</th>
+            <th>Lote</th>
+            <th>Fecha Ingreso</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoTabla"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const URL_BACKEND = 'https://tu-backend.onrender.com';
+
+    async function cargarDatos() {
+      const res = await fetch(`${URL_BACKEND}/api/datos?perfil=admin&horaInicio=${localStorage.getItem('horaInicio')}`);
+      const datos = await res.json();
+      const cuerpo = document.getElementById('cuerpoTabla');
+      cuerpo.innerHTML = '';
+      datos.forEach(d => {
+        const fila = document.createElement('tr');
+        fila.style.backgroundColor = d.color;
+        fila.innerHTML = `
+          <td>${d.tarea}</td>
+          <td>${d.orden || ''}</td>
+          <td>${d.ciudad || ''}</td>
+          <td>${d.operador || ''}</td>
+          <td>${d.observacion || ''}</td>
+          <td>${d.lote + 1}</td>
+          <td>${d.fecha_ingreso ? new Date(d.fecha_ingreso).toLocaleString() : '-'}</td>
+        `;
+        cuerpo.appendChild(fila);
+      });
+    }
+
+    async function subirArchivo(tipo) {
+      const input = document.getElementById({
+        base: 'archivoBase',
+        operadores: 'archivoOp',
+        observaciones: 'archivoObs'
+      }[tipo]);
+      
+      if (!input.files[0]) return alert('Selecciona un archivo');
+      
+      const form = new FormData();
+      form.append('archivo', input.files[0]);
+      
+      const res = await fetch(`${URL_BACKEND}/api/cargar-excel`, {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      alert(data.mensaje || 'Cargado');
+      cargarDatos();
+    }
+
+    function cerrarSesion() {
+      localStorage.clear();
+      window.location.href = 'index.html';
+    }
+
+    cargarDatos();
+  </script>
+</body>
+</html>
