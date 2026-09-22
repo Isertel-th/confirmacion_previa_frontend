@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Modal para ver texto completo con doble clic -->
+  <!-- Modal para ver texto completo al hacer doble clic -->
   <div id="modalTexto" class="modal-texto" onclick="cerrarModal(event)">
     <div class="modal-contenido" onclick="event.stopPropagation()">
       <h4 id="modalTitulo"></h4>
@@ -20,19 +20,19 @@
     <header>
       <h1>⚙️ Gestión Completa (Admin)</h1>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button onclick="descargarExcel()" class="descargar">📥 Descargar Base</button>
+        <button onclick="descargarExcel()" class="descargar" style="background:#1565c0;">📥 Descargar Base Completa</button>
         <button onclick="vaciarBaseTotal()" style="background:#d32f2f;">🗑️ Vaciar Base de Datos</button>
         <button onclick="cerrarSesion()" class="salir">Salir</button>
       </div>
     </header>
 
     <section class="carga-excel">
-      <h3>📤 Cargar Nueva Base (Excel)</h3>
+      <h3>📤 Cargar / Actualizar Base (Excel)</h3>
       <input type="file" id="archivoBase" accept=".xlsx">
       <button onclick="subirArchivo('base')">Subir e Integrar</button>
     </section>
 
-    <!-- MENÚ DE PESTAÑAS (TABS) -->
+    <!-- MENÚ DE PESTAÑAS -->
     <div class="tabs-menu">
       <button class="tab-btn activo" id="btnTabPendientes" onclick="cambiarTab('pendientes')">⏳ Pendientes (<span id="countPendientes">0</span>)</button>
       <button class="tab-btn" id="btnTabGestionados" onclick="cambiarTab('gestionados')">✅ Gestionadas (<span id="countGestionados">0</span>)</button>
@@ -195,10 +195,8 @@
           <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CLIENTE, 18)}</td>
           <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 16)}</td>
           
-          <!-- OPERADOR CON MODAL DE DOBLE CLIC -->
           <td class="texto-corto" ondblclick="mostrarModal('Operador', '${aTexto(valorOp).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorOp, 15)}</td>
           
-          <!-- FECHA DE REGISTRO CON MODAL DE DOBLE CLIC -->
           <td class="texto-corto" ondblclick="mostrarModal('Fecha de Registro', '${aTexto(valorFechaReg).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorFechaReg, 15)}</td>
           
           <td>
@@ -269,12 +267,12 @@
       }
     }
 
-    async function descargarExcel() {
+    function descargarExcel() {
       window.location.href = `${URL_BACKEND}/api/descargar`;
     }
 
     async function vaciarBaseTotal() {
-      const confirmacion = confirm('⚠️ ¿Estás seguro de vaciar toda la base de datos? Esto borrará todas las tareas para empezar totalmente desde 0.');
+      const confirmacion = confirm('⚠️ ¿Estás seguro de vaciar toda la base de datos? Esto borrará todas las tareas.');
       if (!confirmacion) return;
 
       try {
