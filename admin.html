@@ -7,51 +7,58 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Modal para ver texto completo -->
+  <!-- Modal para ver texto completo al hacer doble clic -->
   <div id="modalTexto" class="modal-texto" onclick="cerrarModal(event)">
     <div class="modal-contenido" onclick="event.stopPropagation()">
       <h4 id="modalTitulo"></h4>
       <p id="modalTextoContenido"></p>
-      <button class="modal-cerrar" onclick="cerrarModal()">Cerrar</button>
+      <button class="guardar" style="background:#2e7d32;padding:8px 20px;" onclick="cerrarModal()">Cerrar</button>
     </div>
   </div>
 
   <div class="contenedor">
     <header>
       <h1>⚙️ Gestión Completa (Admin)</h1>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button onclick="descargarExcel()" class="descargar">📥 Descargar Excel</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="descargarExcel()" class="descargar">📥 Descargar Base</button>
         <button onclick="cerrarSesion()" class="salir">Salir</button>
       </div>
     </header>
 
     <section class="carga-excel">
-      <h3>📤 Cargar Archivos</h3>
-      <label>Base de Datos:</label>
+      <h3>📤 Cargar Nueva Base (Excel)</h3>
       <input type="file" id="archivoBase" accept=".xlsx">
-      <button onclick="subirArchivo('base')">Subir Base</button>
+      <button onclick="subirArchivo('base')">Subir e Integrar</button>
     </section>
 
-    <!-- SECCIÓN PENDIENTES -->
-    <h3>⏳ Tareas Pendientes</h3>
-    <div class="tabla-contenedor">
-      <table>
-        <thead>
-          <tr id="encabezadoPendientes"></tr>
-        </thead>
-        <tbody id="cuerpoTablaPendientes"></tbody>
-      </table>
+    <!-- MENÚ DE PESTAÑAS -->
+    <div class="tabs-menu">
+      <button class="tab-btn activo" id="btnTabPendientes" onclick="cambiarTab('pendientes')">⏳ Pendientes (<span id="countPendientes">0</span>)</button>
+      <button class="tab-btn" id="btnTabGestionados" onclick="cambiarTab('gestionados')">✅ Gestionadas (<span id="countGestionados">0</span>)</button>
     </div>
 
-    <!-- SECCIÓN GESTIONADOS -->
-    <h3>✅ Tareas Gestionadas</h3>
-    <div class="tabla-contenedor">
-      <table>
-        <thead>
-          <tr id="encabezadoGestionados"></tr>
-        </thead>
-        <tbody id="cuerpoTablaGestionados"></tbody>
-      </table>
+    <!-- PESTAÑA PENDIENTES -->
+    <div id="tabPendientes" class="tab-contenido activo">
+      <div class="tabla-contenedor">
+        <table>
+          <thead>
+            <tr id="encabezadoPendientes"></tr>
+          </thead>
+          <tbody id="cuerpoTablaPendientes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PESTAÑA GESTIONADOS -->
+    <div id="tabGestionados" class="tab-contenido">
+      <div class="tabla-contenedor">
+        <table>
+          <thead>
+            <tr id="encabezadoGestionados"></tr>
+          </thead>
+          <tbody id="cuerpoTablaGestionados"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -86,12 +93,25 @@
         
         todosLosDatos = await resDatos.json();
         listas = await resListas.json();
-        
+
         generarEncabezados('encabezadoPendientes', 'pendientes');
         generarEncabezados('encabezadoGestionados', 'gestionados');
         renderizarTablas();
       } catch (e) {
         console.error('Error al cargar datos:', e);
+      }
+    }
+
+    function cambiarTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('activo'));
+      document.querySelectorAll('.tab-contenido').forEach(cont => cont.classList.remove('activo'));
+
+      if (tab === 'pendientes') {
+        document.getElementById('btnTabPendientes').classList.add('activo');
+        document.getElementById('tabPendientes').classList.add('activo');
+      } else {
+        document.getElementById('btnTabGestionados').classList.add('activo');
+        document.getElementById('tabGestionados').classList.add('activo');
       }
     }
 
@@ -125,7 +145,6 @@
       } else {
         filtrosGestionados[clave] = valor;
       }
-
       renderizarTablas();
     }
 
@@ -133,18 +152,18 @@
       return datos.filter(d => {
         return Object.keys(filtros).every(clave => {
           if (!filtros[clave]) return true;
-          const valorCampo = aTexto(d[clave]).toLowerCase();
-          return valorCampo.includes(filtros[clave]);
+          return aTexto(d[clave]).toLowerCase().includes(filtros[clave]);
         });
       });
     }
 
     function renderizarTablas() {
-      // Separar por estado
       let pendientes = todosLosDatos.filter(d => !d.Observacion || d.Observacion === 'Pendiente');
       let gestionados = todosLosDatos.filter(d => d.Observacion && d.Observacion !== 'Pendiente');
 
-      // Aplicar filtros independientes
+      document.getElementById('countPendientes').textContent = pendientes.length;
+      document.getElementById('countGestionados').textContent = gestionados.length;
+
       pendientes = aplicarFiltroArray(pendientes, filtrosPendientes);
       gestionados = aplicarFiltroArray(gestionados, filtrosGestionados);
 
@@ -164,17 +183,21 @@
         const etiquetaNuevo = d.NuevoRegistro ? '<span class="nuevo-registro">Nuevo registro</span>' : '';
 
         fila.innerHTML = `
-          <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${aTexto(d.TAREA).replace(/'/g, "\\'")}')">
+          <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${aTexto(d.TAREA).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">
             ${truncarTexto(d.TAREA, 12)} ${etiquetaNuevo}
           </td>
-          <td class="texto-corto" ondblclick="mostrarModal('Orden', '${aTexto(d.ORDEN).replace(/'/g, "\\'")}')">${truncarTexto(d.ORDEN, 12)}</td>
-          <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${aTexto(d.CIUDAD).replace(/'/g, "\\'")}')">${truncarTexto(d.CIUDAD, 18)}</td>
-          <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${aTexto(d.TECNICO).replace(/'/g, "\\'")}')">${truncarTexto(d.TECNICO, 15)}</td>
-          <td class="texto-corto" ondblclick="mostrarModal('Contrato', '${aTexto(d.CONTRATO).replace(/'/g, "\\'")}')">${aTexto(d.CONTRATO)}</td>
-          <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')">${truncarTexto(d.CLIENTE, 18)}</td>
-          <td class="texto-corto" ondblclick="mostrarModal('Fecha Prog.', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 16)}</td>
-          <td class="texto-corto">${aTexto(valorOp)}</td>
-          <td class="texto-corto">${aTexto(d['Fecha de Registro'])}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Orden', '${aTexto(d.ORDEN).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${aTexto(d.CIUDAD).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 18)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${aTexto(d.TECNICO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Contrato', '${aTexto(d.CONTRATO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${aTexto(d.CONTRATO)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CLIENTE, 18)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 16)}</td>
+          
+          <!-- OPERADOR CON MODAL AL HACER DOBLE CLIC -->
+          <td class="texto-corto" ondblclick="mostrarModal('Operador', '${aTexto(valorOp).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorOp, 15)}</td>
+          
+          <!-- FECHA DE REGISTRO CON MODAL AL HACER DOBLE CLIC -->
+          <td class="texto-corto" ondblclick="mostrarModal('Fecha de Registro', '${aTexto(d['Fecha de Registro']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['Fecha de Registro'], 15)}</td>
           
           <td>
             <select class="campo-editar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}">
@@ -250,7 +273,7 @@
 
     async function subirArchivo(tipo) {
       const input = document.getElementById('archivoBase');
-      if (!input.files[0]) return alert('Selecciona un archivo');
+      if (!input.files[0]) return alert('Selecciona un archivo Excel');
 
       const form = new FormData();
       form.append('archivo', input.files[0]);
