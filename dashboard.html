@@ -105,10 +105,7 @@ function renderizarTabla(datos) {
       <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${aTexto(d.TECNICO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
       <td class="texto-corto" ondblclick="mostrarModal('Contrato', '${aTexto(d.CONTRATO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${aTexto(d.CONTRATO)}</td>
       <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${aTexto(d.CLIENTE)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['Fecha de Programación']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['Fecha de Programación'], 12)}</td>
-      <td ondblclick="mostrarModal('Operador', '${aTexto(d.Operador).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">
-        <select class="campo-editar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}" data-campo="operador">
-          <option value="">--</option>
+      <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 12)}</td>          <option value="">--</option>
           ${listas.operadores.map(op => 
             `<option ${(aTexto(d.Operador)) === op ? 'selected' : ''}>${op}</option>`
           ).join('')}
