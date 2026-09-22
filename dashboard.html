@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Tareas — Operador</title>
+  <title>Tareas — Operador</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -12,21 +12,25 @@
       <h1>📋 Tareas Asignadas</h1>
       <button onclick="cerrarSesion()" class="salir">Salir</button>
     </header>
-    
+
     <div class="filtros">
-      <input type="text" id="buscar" placeholder="Buscar por tarea, orden o ciudad...">
+      <input type="text" id="buscar" placeholder="Buscar...">
     </div>
 
     <div class="tabla-contenedor">
       <table>
         <thead>
           <tr>
-            <th>Tarea (única)</th>
-            <th>Orden</th>
-            <th>Ciudad</th>
+            <th>TAREA</th>
+            <th>ORDEN</th>
+            <th>CIUDAD</th>
+            <th>TÉCNICO</th>
+            <th>CONTRATO</th>
+            <th>Cliente</th>
+            <th>Fecha Programación</th>
             <th>Operador</th>
             <th>Observación</th>
-            <th>Acción</th>
+            <th>Guardar</th>
           </tr>
         </thead>
         <tbody id="cuerpoTabla"></tbody>
@@ -35,8 +39,9 @@
   </div>
 
   <script>
-    const URL_BACKEND = 'https://confirmacion-previa-backend.onrender.com'; // Tu URL de Render
+    const URL_BACKEND = 'https://confirmacion-previa-backend.onrender.com';
     let listas = { operadores: [], observaciones: [] };
+    let todosLosDatos = [];
 
     async function cargarDatos() {
       const perfil = localStorage.getItem('perfil');
@@ -47,9 +52,9 @@
         fetch(`${URL_BACKEND}/api/listas`)
       ]);
 
-      const datos = await resDatos.json();
+      todosLosDatos = await resDatos.json();
       listas = await resListas.json();
-      renderizarTabla(datos);
+      renderizarTabla(todosLosDatos);
     }
 
     function renderizarTabla(datos) {
@@ -60,25 +65,33 @@
         const fila = document.createElement('tr');
         fila.style.backgroundColor = d.color;
         fila.innerHTML = `
-          <td>${d.tarea}</td>
-          <td>${d.orden || ''}</td>
-          <td>${d.ciudad || ''}</td>
+          <td>${d.TAREA || ''}</td>
+          <td>${d.ORDEN || ''}</td>
+          <td>${d.CIUDAD || ''}</td>
+          <td>${d.TECNICO || ''}</td>
+          <td>${d.CONTRATO || ''}</td>
+          <td>${d.Cliente || ''}</td>
+          <td>${d['Fecha de programación desde'] || ''}</td>
           <td>
-            <select class="campo-editar" data-tarea="${d.tarea}" data-campo="operador">
-              ${listas.operadores.map(op => `<option ${d.operador===op?'selected':''}>${op}</option>`).join('')}
+            <select class="campo-editar" data-tarea="${d.TAREA}" data-campo="operador">
+              <option value="">-- Seleccionar --</option>
+              ${listas.operadores.map(op => 
+                `<option ${(d.Operador || '') === op ? 'selected' : ''}>${op}</option>`
+              ).join('')}
             </select>
           </td>
           <td>
-            <select class="campo-editar" data-tarea="${d.tarea}" data-campo="observacion">
-              ${listas.observaciones.map(obs => `<option ${d.observacion===obs?'selected':''}>${obs}</option>`).join('')}
+            <select class="campo-editar" data-tarea="${d.TAREA}" data-campo="observacion">
+              ${listas.observaciones.map(obs => 
+                `<option ${(d.Observacion || 'Pendiente') === obs ? 'selected' : ''}>${obs}</option>`
+              ).join('')}
             </select>
           </td>
-          <td><button class="guardar" data-tarea="${d.tarea}">✓</button></td>
+          <td><button class="guardar" data-tarea="${d.TAREA}">✓</button></td>
         `;
         cuerpo.appendChild(fila);
       });
 
-      // Eventos
       document.querySelectorAll('.guardar').forEach(btn => {
         btn.onclick = async e => {
           const tarea = e.target.dataset.tarea;
@@ -90,10 +103,18 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tarea, operador, observacion })
           });
-          alert('Guardado ✓');
+          alert('✅ Guardado');
         };
       });
     }
+
+    document.getElementById('buscar').addEventListener('input', e => {
+      const texto = e.target.value.toLowerCase();
+      const filtrados = todosLosDatos.filter(d =>
+        Object.values(d).some(v => v && String(v).toLowerCase().includes(texto))
+      );
+      renderizarTabla(filtrados);
+    });
 
     function cerrarSesion() {
       localStorage.clear();

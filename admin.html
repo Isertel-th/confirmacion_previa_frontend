@@ -3,53 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel Administrativo — Isertel</title>
+  <title>Administración — Base Completa</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="contenedor">
     <header>
-      <h1>⚙️ Gestión Completa del Sistema</h1>
-      <button onclick="cerrarSesion()" class="salir">Salir</button>
+      <h1>⚙️ Gestión Completa de Tareas</h1>
+      <div style="display:flex;gap:10px;">
+        <button onclick="descargarExcel()" class="descargar">📥 Descargar Base Actualizada</button>
+        <button onclick="cerrarSesion()" class="salir">Salir</button>
+      </div>
     </header>
 
     <section class="carga-excel">
-      <h3>📤 Cargar Archivos Excel</h3>
-      <p>Selecciona el archivo correspondiente para actualizar la base de datos</p>
-      
-      <label>Base de Datos Principal:</label>
+      <h3>📤 Cargar Archivos</h3>
+      <label>Base de Datos:</label>
       <input type="file" id="archivoBase" accept=".xlsx">
       <button onclick="subirArchivo('base')">Subir Base</button>
-
-      <label>Lista Operadores:</label>
-      <input type="file" id="archivoOp" accept=".xlsx">
-      <button onclick="subirArchivo('operadores')">Subir Operadores</button>
-
-      <label>Lista Observaciones:</label>
-      <input type="file" id="archivoObs" accept=".xlsx">
-      <button onclick="subirArchivo('observaciones')">Subir Observaciones</button>
     </section>
 
-    <h3>📊 Historial Completo de Registros</h3>
     <div class="leyenda-colores">
-      <span>Leyenda de lotes:</span>
-      <span style="background:#e3f2fd">Lote 1</span>
-      <span style="background:#c8e6c9">Lote 2</span>
-      <span style="background:#fff9c4">Lote 3</span>
-      <span style="background:#f8bbd9">Lote 4</span>
+      <span>Lotes:</span>
+      <span style="background:#e3f2fd">1</span>
+      <span style="background:#c8e6c9">2</span>
+      <span style="background:#fff9c4">3</span>
+      <span style="background:#f8bbd9">4</span>
+      <span style="background:#e1bee8">5</span>
+      <span style="background:#d7ccc8">6</span>
     </div>
 
     <div class="tabla-contenedor">
       <table>
         <thead>
           <tr>
-            <th>Tarea</th>
-            <th>Orden</th>
-            <th>Ciudad</th>
+            <th>TAREA</th>
+            <th>ORDEN</th>
+            <th>CIUDAD</th>
+            <th>TÉCNICO</th>
+            <th>CONTRATO</th>
+            <th>Cliente</th>
+            <th>Fecha Programación</th>
             <th>Operador</th>
             <th>Observación</th>
             <th>Lote</th>
-            <th>Fecha Ingreso</th>
           </tr>
         </thead>
         <tbody id="cuerpoTabla"></tbody>
@@ -59,39 +56,44 @@
 
   <script>
     const URL_BACKEND = 'https://confirmacion-previa-backend.onrender.com';
+    let todosLosDatos = [];
 
     async function cargarDatos() {
-      const res = await fetch(`${URL_BACKEND}/api/datos?perfil=admin&horaInicio=${localStorage.getItem('horaInicio')}`);
-      const datos = await res.json();
+      const res = await fetch(`${URL_BACKEND}/api/datos?perfil=admin&horaInicio=${new Date().toISOString()}`);
+      todosLosDatos = await res.json();
       const cuerpo = document.getElementById('cuerpoTabla');
       cuerpo.innerHTML = '';
-      datos.forEach(d => {
+      
+      todosLosDatos.forEach(d => {
         const fila = document.createElement('tr');
         fila.style.backgroundColor = d.color;
         fila.innerHTML = `
-          <td>${d.tarea}</td>
-          <td>${d.orden || ''}</td>
-          <td>${d.ciudad || ''}</td>
-          <td>${d.operador || ''}</td>
-          <td>${d.observacion || ''}</td>
+          <td>${d.TAREA || ''}</td>
+          <td>${d.ORDEN || ''}</td>
+          <td>${d.CIUDAD || ''}</td>
+          <td>${d.TECNICO || ''}</td>
+          <td>${d.CONTRATO || ''}</td>
+          <td>${d.Cliente || ''}</td>
+          <td>${d['Fecha de programación desde'] || ''}</td>
+          <td>${d.Operador || '-'}</td>
+          <td>${d.Observacion || 'Pendiente'}</td>
           <td>${d.lote + 1}</td>
-          <td>${d.fecha_ingreso ? new Date(d.fecha_ingreso).toLocaleString() : '-'}</td>
         `;
         cuerpo.appendChild(fila);
       });
     }
 
+    async function descargarExcel() {
+      window.location.href = `${URL_BACKEND}/api/descargar`;
+    }
+
     async function subirArchivo(tipo) {
-      const input = document.getElementById({
-        base: 'archivoBase',
-        operadores: 'archivoOp',
-        observaciones: 'archivoObs'
-      }[tipo]);
-      
+      const input = document.getElementById('archivoBase');
       if (!input.files[0]) return alert('Selecciona un archivo');
       
       const form = new FormData();
       form.append('archivo', input.files[0]);
+      form.append('tipo', tipo);
       
       const res = await fetch(`${URL_BACKEND}/api/cargar-excel`, {
         method: 'POST',
