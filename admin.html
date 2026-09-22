@@ -3,34 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Administración — Base Completa</title>
+  <title>Administración — Sistema de Gestión</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="contenedor">
     <header>
       <h1>⚙️ Gestión Completa de Tareas</h1>
-      <div style="display:flex;gap:10px;">
+      <div style="display:flex;gap:10px;align-items:center;">
         <button onclick="descargarExcel()" class="descargar">📥 Descargar Base Actualizada</button>
         <button onclick="cerrarSesion()" class="salir">Salir</button>
       </div>
     </header>
 
-    <section class="carga-excel">
-      <h3>📤 Cargar Archivos</h3>
-      <label>Base de Datos:</label>
-      <input type="file" id="archivoBase" accept=".xlsx">
-      <button onclick="subirArchivo('base')">Subir Base</button>
+    <!-- SECCIÓN DE CARGA — Aquí se sube el Excel sin usar Git -->
+    <section class="carga-excel" style="background:#f5f5f5; padding:20px; border-radius:8px; margin-bottom:20px;">
+      <h3>📤 Cargar / Actualizar Archivos Excel</h3>
+      <p style="color:#555; font-size:14px;">Selecciona tu archivo actualizado y presiona "Subir". Esto reemplaza los datos del sistema sin necesidad de usar Git.</p>
+      
+      <div style="margin:10px 0;">
+        <label><strong>Base de Datos Principal (base_datos.xlsx):</strong></label>
+        <input type="file" id="archivoBase" accept=".xlsx" style="margin:5px 0;">
+        <button onclick="subirArchivo('base')" style="padding:8px 16px; background:#2e7d32; color:white; border:none; border-radius:4px; cursor:pointer;">Subir Base</button>
+      </div>
+
+      <div style="margin:10px 0;">
+        <label><strong>Lista de Operadores (operadores.xlsx):</strong></label>
+        <input type="file" id="archivoOp" accept=".xlsx" style="margin:5px 0;">
+        <button onclick="subirArchivo('operadores')" style="padding:8px 16px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Subir Operadores</button>
+      </div>
+
+      <div style="margin:10px 0;">
+        <label><strong>Lista de Estados/Observaciones (observaciones.xlsx):</strong></label>
+        <input type="file" id="archivoObs" accept=".xlsx" style="margin:5px 0;">
+        <button onclick="subirArchivo('observaciones')" style="padding:8px 16px; background:#f57c00; color:white; border:none; border-radius:4px; cursor:pointer;">Subir Observaciones</button>
+      </div>
+
+      <p id="mensajeCarga" style="margin-top:10px; font-weight:bold;"></p>
     </section>
 
-    <div class="leyenda-colores">
+    <div class="leyenda-colores" style="display:flex; gap:10px; margin:10px 0; align-items:center;">
       <span>Lotes:</span>
-      <span style="background:#e3f2fd">1</span>
-      <span style="background:#c8e6c9">2</span>
-      <span style="background:#fff9c4">3</span>
-      <span style="background:#f8bbd9">4</span>
-      <span style="background:#e1bee8">5</span>
-      <span style="background:#d7ccc8">6</span>
+      <span style="background:#e3f2fd; padding:4px 8px; border-radius:4px;">1</span>
+      <span style="background:#c8e6c9; padding:4px 8px; border-radius:4px;">2</span>
+      <span style="background:#fff9c4; padding:4px 8px; border-radius:4px;">3</span>
+      <span style="background:#f8bbd9; padding:4px 8px; border-radius:4px;">4</span>
+      <span style="background:#e1bee8; padding:4px 8px; border-radius:4px;">5</span>
+      <span style="background:#d7ccc8; padding:4px 8px; border-radius:4px;">6</span>
     </div>
 
     <div class="tabla-contenedor">
@@ -88,20 +107,42 @@
     }
 
     async function subirArchivo(tipo) {
-      const input = document.getElementById('archivoBase');
-      if (!input.files[0]) return alert('Selecciona un archivo');
+      const inputId = {
+        base: 'archivoBase',
+        operadores: 'archivoOp',
+        observaciones: 'archivoObs'
+      }[tipo];
       
+      const input = document.getElementById(inputId);
+      if (!input.files[0]) {
+        alert('⚠️ Selecciona un archivo primero');
+        return;
+      }
+
       const form = new FormData();
       form.append('archivo', input.files[0]);
       form.append('tipo', tipo);
-      
-      const res = await fetch(`${URL_BACKEND}/api/cargar-excel`, {
-        method: 'POST',
-        body: form
-      });
-      const data = await res.json();
-      alert(data.mensaje || 'Cargado');
-      cargarDatos();
+
+      const mensaje = document.getElementById('mensajeCarga');
+      mensaje.textContent = '⏳ Subiendo...';
+      mensaje.style.color = '#1976d2';
+
+      try {
+        const res = await fetch(`${URL_BACKEND}/api/cargar-excel`, {
+          method: 'POST',
+          body: form
+        });
+        const data = await res.json();
+        
+        mensaje.textContent = '✅ ' + (data.mensaje || 'Archivo actualizado correctamente');
+        mensaje.style.color = '#2e7d32';
+        
+        // Recargar la tabla automáticamente
+        await cargarDatos();
+      } catch (error) {
+        mensaje.textContent = '❌ Error al subir el archivo';
+        mensaje.style.color = '#d32f2f';
+      }
     }
 
     function cerrarSesion() {
