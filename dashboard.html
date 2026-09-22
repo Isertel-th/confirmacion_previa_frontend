@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Modal para ver texto completo al hacer doble clic -->
+  <!-- Modal para ver texto completo con doble clic -->
   <div id="modalTexto" class="modal-texto" onclick="cerrarModal(event)">
     <div class="modal-contenido" onclick="event.stopPropagation()">
       <h4 id="modalTitulo"></h4>
@@ -22,7 +22,7 @@
       <button onclick="cerrarSesion()" class="salir">Salir</button>
     </header>
 
-    <!-- MENÚ DE PESTAÑAS -->
+    <!-- MENÚ DE PESTAÑAS (TABS) -->
     <div class="tabs-menu">
       <button class="tab-btn activo" id="btnTabPendientes" onclick="cambiarTab('pendientes')">⏳ Pendientes (<span id="countPendientes">0</span>)</button>
       <button class="tab-btn" id="btnTabGestionados" onclick="cambiarTab('gestionados')">✅ Gestionadas (<span id="countGestionados">0</span>)</button>
@@ -172,6 +172,7 @@
       datos.forEach(d => {
         const valorObs = d.Observacion || 'Pendiente';
         const valorOp = d.Operador || '';
+        const valorFechaReg = d['Fecha de Registro'] || '';
         const fila = document.createElement('tr');
 
         const etiquetaNuevo = d.NuevoRegistro ? '<span class="nuevo-registro">Nuevo registro</span>' : '';
@@ -187,11 +188,11 @@
           <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CLIENTE, 18)}</td>
           <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 16)}</td>
           
-          <!-- OPERADOR CON MODAL AL HACER DOBLE CLIC -->
+          <!-- OPERADOR CON MODAL DE DOBLE CLIC -->
           <td class="texto-corto" ondblclick="mostrarModal('Operador', '${aTexto(valorOp).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorOp, 15)}</td>
           
-          <!-- FECHA DE REGISTRO CON MODAL AL HACER DOBLE CLIC -->
-          <td class="texto-corto" ondblclick="mostrarModal('Fecha de Registro', '${aTexto(d['Fecha de Registro']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['Fecha de Registro'], 15)}</td>
+          <!-- FECHA DE REGISTRO CON MODAL DE DOBLE CLIC -->
+          <td class="texto-corto" ondblclick="mostrarModal('Fecha de Registro', '${aTexto(valorFechaReg).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorFechaReg, 15)}</td>
           
           <td>
             <select class="campo-editar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}">
