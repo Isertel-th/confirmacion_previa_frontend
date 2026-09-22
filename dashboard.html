@@ -4,6 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tareas — Operador</title>
+
+  <!-- PROTECCIÓN DE RUTA (Verificación inmediata antes de cargar el HTML) -->
+  <script>
+    (function guardiaOperador() {
+      const usuario = localStorage.getItem('usuario');
+      const perfil = localStorage.getItem('perfil');
+
+      if (!usuario || !perfil) {
+        window.location.replace('index.html');
+      }
+    })();
+  </script>
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -22,7 +35,7 @@
       <button onclick="cerrarSesion()" class="salir">Salir</button>
     </header>
 
-    <!-- MENÚ DE PESTAÑAS (TABS) -->
+    <!-- MENÚ DE PESTAÑAS -->
     <div class="tabs-menu">
       <button class="tab-btn activo" id="btnTabPendientes" onclick="cambiarTab('pendientes')">⏳ Pendientes (<span id="countPendientes">0</span>)</button>
       <button class="tab-btn" id="btnTabGestionados" onclick="cambiarTab('gestionados')">✅ Gestionadas (<span id="countGestionados">0</span>)</button>
@@ -188,10 +201,8 @@
           <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CLIENTE, 18)}</td>
           <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 16)}</td>
           
-          <!-- OPERADOR CON MODAL DE DOBLE CLIC -->
           <td class="texto-corto" ondblclick="mostrarModal('Operador', '${aTexto(valorOp).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorOp, 15)}</td>
           
-          <!-- FECHA DE REGISTRO CON MODAL DE DOBLE CLIC -->
           <td class="texto-corto" ondblclick="mostrarModal('Fecha de Registro', '${aTexto(valorFechaReg).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorFechaReg, 15)}</td>
           
           <td>
@@ -264,7 +275,7 @@
 
     function cerrarSesion() {
       localStorage.clear();
-      window.location.href = 'index.html';
+      window.location.replace('index.html');
     }
 
     cargarDatos();
