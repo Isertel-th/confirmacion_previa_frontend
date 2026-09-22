@@ -3,55 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Administración — Sistema de Gestión</title>
+  <title>Administración — Base Completa</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Modal para ver texto completo -->
+  <div id="modalTexto" class="modal-texto" onclick="cerrarModal(event)">
+    <div class="modal-contenido" onclick="event.stopPropagation()">
+      <h4 id="modalTitulo"></h4>
+      <p id="modalTextoContenido"></p>
+      <button class="modal-cerrar" onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+
   <div class="contenedor">
     <header>
-      <h1>⚙️ Gestión Completa de Tareas</h1>
-      <div style="display:flex;gap:10px;align-items:center;">
-        <button onclick="descargarExcel()" class="descargar">📥 Descargar Base Actualizada</button>
+      <h1>⚙️ Gestión Completa</h1>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button onclick="descargarExcel()" class="descargar">📥 Descargar</button>
         <button onclick="cerrarSesion()" class="salir">Salir</button>
       </div>
     </header>
-
-    <!-- SECCIÓN DE CARGA — Aquí se sube el Excel sin usar Git -->
-    <section class="carga-excel" style="background:#f5f5f5; padding:20px; border-radius:8px; margin-bottom:20px;">
-      <h3>📤 Cargar / Actualizar Archivos Excel</h3>
-      <p style="color:#555; font-size:14px;">Selecciona tu archivo actualizado y presiona "Subir". Esto reemplaza los datos del sistema sin necesidad de usar Git.</p>
-      
-      <div style="margin:10px 0;">
-        <label><strong>Base de Datos Principal (base_datos.xlsx):</strong></label>
-        <input type="file" id="archivoBase" accept=".xlsx" style="margin:5px 0;">
-        <button onclick="subirArchivo('base')" style="padding:8px 16px; background:#2e7d32; color:white; border:none; border-radius:4px; cursor:pointer;">Subir Base</button>
-      </div>
-
-      <div style="margin:10px 0;">
-        <label><strong>Lista de Operadores (operadores.xlsx):</strong></label>
-        <input type="file" id="archivoOp" accept=".xlsx" style="margin:5px 0;">
-        <button onclick="subirArchivo('operadores')" style="padding:8px 16px; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer;">Subir Operadores</button>
-      </div>
-
-      <div style="margin:10px 0;">
-        <label><strong>Lista de Estados/Observaciones (observaciones.xlsx):</strong></label>
-        <input type="file" id="archivoObs" accept=".xlsx" style="margin:5px 0;">
-        <button onclick="subirArchivo('observaciones')" style="padding:8px 16px; background:#f57c00; color:white; border:none; border-radius:4px; cursor:pointer;">Subir Observaciones</button>
-      </div>
-
-      <p id="mensajeCarga" style="margin-top:10px; font-weight:bold;"></p>
+    <section class="carga-excel">
+      <h3>📤 Cargar Archivos</h3>
+      <label>Base de Datos:</label>
+      <input type="file" id="archivoBase" accept=".xlsx">
+      <button onclick="subirArchivo('base')">Subir Base</button>
     </section>
-
-    <div class="leyenda-colores" style="display:flex; gap:10px; margin:10px 0; align-items:center;">
+    <div class="leyenda-colores">
       <span>Lotes:</span>
-      <span style="background:#e3f2fd; padding:4px 8px; border-radius:4px;">1</span>
-      <span style="background:#c8e6c9; padding:4px 8px; border-radius:4px;">2</span>
-      <span style="background:#fff9c4; padding:4px 8px; border-radius:4px;">3</span>
-      <span style="background:#f8bbd9; padding:4px 8px; border-radius:4px;">4</span>
-      <span style="background:#e1bee8; padding:4px 8px; border-radius:4px;">5</span>
-      <span style="background:#d7ccc8; padding:4px 8px; border-radius:4px;">6</span>
+      <span style="background:#e3f2fd">1</span>
+      <span style="background:#c8e6c9">2</span>
+      <span style="background:#fff9c4">3</span>
+      <span style="background:#f8bbd9">4</span>
+      <span style="background:#e1bee8">5</span>
+      <span style="background:#d7ccc8">6</span>
     </div>
-
     <div class="tabla-contenedor">
       <table>
         <thead>
@@ -62,10 +49,11 @@
             <th>TÉCNICO</th>
             <th>CONTRATO</th>
             <th>Cliente</th>
-            <th>Fecha Programación</th>
+            <th>Fecha Prog.</th>
             <th>Operador</th>
             <th>Observación</th>
             <th>Lote</th>
+            <th>✓</th>
           </tr>
         </thead>
         <tbody id="cuerpoTabla"></tbody>
@@ -76,29 +64,93 @@
   <script>
     const URL_BACKEND = 'https://confirmacion-previa-backend.onrender.com';
     let todosLosDatos = [];
+    let listas = { operadores: [], observaciones: [] };
 
     async function cargarDatos() {
-      const res = await fetch(`${URL_BACKEND}/api/datos?perfil=admin&horaInicio=${new Date().toISOString()}`);
+      const [res, resListas] = await Promise.all([
+        fetch(`${URL_BACKEND}/api/datos?perfil=admin&horaInicio=${new Date().toISOString()}`),
+        fetch(`${URL_BACKEND}/api/listas`)
+      ]);
+      
       todosLosDatos = await res.json();
+      listas = await resListas.json();
+      renderizarTabla(todosLosDatos);
+    }
+
+    function truncarTexto(texto, maxCaracteres = 25) {
+      if (!texto) return '';
+      const t = String(texto);
+      return t.length > maxCaracteres ? t.substring(0, maxCaracteres) + '...' : t;
+    }
+
+    function mostrarModal(titulo, textoCompleto) {
+      document.getElementById('modalTitulo').textContent = titulo;
+      document.getElementById('modalTextoContenido').textContent = textoCompleto || '(Vacío)';
+      document.getElementById('modalTexto').style.display = 'flex';
+    }
+
+    function cerrarModal(event) {
+      if (!event || event.target === document.getElementById('modalTexto')) {
+        document.getElementById('modalTexto').style.display = 'none';
+      }
+    }
+
+    function renderizarTabla(datos) {
       const cuerpo = document.getElementById('cuerpoTabla');
       cuerpo.innerHTML = '';
       
-      todosLosDatos.forEach(d => {
+      datos.forEach(d => {
+        const valorObs = d.Observacion || 'Pendiente';
         const fila = document.createElement('tr');
         fila.style.backgroundColor = d.color;
         fila.innerHTML = `
-          <td>${d.TAREA || ''}</td>
-          <td>${d.ORDEN || ''}</td>
-          <td>${d.CIUDAD || ''}</td>
-          <td>${d.TECNICO || ''}</td>
-          <td>${d.CONTRATO || ''}</td>
-          <td>${d.Cliente || ''}</td>
-          <td>${d['Fecha de programación desde'] || ''}</td>
-          <td>${d.Operador || '-'}</td>
-          <td>${d.Observacion || 'Pendiente'}</td>
-          <td>${d.lote + 1}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${(d.TAREA||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TAREA, 12)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Orden', '${(d.ORDEN||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${(d.CIUDAD||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 22)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${(d.TECNICO||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
+          <td class="texto-corto">${d.CONTRATO || ''}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${(d.Cliente||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.Cliente, 15)}</td>
+          <td class="texto-corto">${d['Fecha de programación'] || ''}</td>
+          <td>
+            <select class="campo-editar" data-tarea="${d.TAREA}" data-campo="operador">
+              <option value="">--</option>
+              ${listas.operadores.map(op => 
+                `<option ${(d.Operador || '') === op ? 'selected' : ''}>${op}</option>`
+              ).join('')}
+            </select>
+          </td>
+          <td>
+            <select class="campo-editar" data-tarea="${d.TAREA}" data-campo="observacion">
+              <option value="">--</option>
+              ${listas.observaciones.map(obs => 
+                `<option ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
+              ).join('')}
+            </select>
+          </td>
+          <td style="text-align:center">${d.lote + 1}</td>
+          <td><button class="guardar" data-tarea="${d.TAREA}">✓</button></td>
         `;
         cuerpo.appendChild(fila);
+      });
+
+      asignarEventosGuardado();
+    }
+
+    function asignarEventosGuardado() {
+      document.querySelectorAll('.guardar').forEach(btn => {
+        btn.onclick = async e => {
+          const tarea = e.target.dataset.tarea;
+          const operador = document.querySelector(`select[data-tarea="${tarea}"][data-campo="operador"]`).value;
+          const observacion = document.querySelector(`select[data-tarea="${tarea}"][data-campo="observacion"]`).value;
+          
+          await fetch(`${URL_BACKEND}/api/editar`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tarea, operador, observacion })
+          });
+          
+          alert('✅ Guardado');
+        };
       });
     }
 
@@ -107,42 +159,20 @@
     }
 
     async function subirArchivo(tipo) {
-      const inputId = {
-        base: 'archivoBase',
-        operadores: 'archivoOp',
-        observaciones: 'archivoObs'
-      }[tipo];
+      const input = document.getElementById('archivoBase');
+      if (!input.files[0]) return alert('Selecciona un archivo');
       
-      const input = document.getElementById(inputId);
-      if (!input.files[0]) {
-        alert('⚠️ Selecciona un archivo primero');
-        return;
-      }
-
       const form = new FormData();
       form.append('archivo', input.files[0]);
       form.append('tipo', tipo);
-
-      const mensaje = document.getElementById('mensajeCarga');
-      mensaje.textContent = '⏳ Subiendo...';
-      mensaje.style.color = '#1976d2';
-
-      try {
-        const res = await fetch(`${URL_BACKEND}/api/cargar-excel`, {
-          method: 'POST',
-          body: form
-        });
-        const data = await res.json();
-        
-        mensaje.textContent = '✅ ' + (data.mensaje || 'Archivo actualizado correctamente');
-        mensaje.style.color = '#2e7d32';
-        
-        // Recargar la tabla automáticamente
-        await cargarDatos();
-      } catch (error) {
-        mensaje.textContent = '❌ Error al subir el archivo';
-        mensaje.style.color = '#d32f2f';
-      }
+      
+      const res = await fetch(`${URL_BACKEND}/api/cargar-excel`, {
+        method: 'POST',
+        body: form
+      });
+      const data = await res.json();
+      alert(data.mensaje || 'Cargado');
+      cargarDatos();
     }
 
     function cerrarSesion() {

@@ -7,16 +7,23 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Modal para ver texto completo -->
+  <div id="modalTexto" class="modal-texto" onclick="cerrarModal(event)">
+    <div class="modal-contenido" onclick="event.stopPropagation()">
+      <h4 id="modalTitulo"></h4>
+      <p id="modalTextoContenido"></p>
+      <button class="modal-cerrar" onclick="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+
   <div class="contenedor">
     <header>
       <h1>📋 Tareas Asignadas</h1>
       <button onclick="cerrarSesion()" class="salir">Salir</button>
     </header>
-
     <div class="filtros">
       <input type="text" id="buscar" placeholder="Buscar...">
     </div>
-
     <div class="tabla-contenedor">
       <table>
         <thead>
@@ -27,10 +34,10 @@
             <th>TÉCNICO</th>
             <th>CONTRATO</th>
             <th>Cliente</th>
-            <th>Fecha Programación</th>
+            <th>Fecha Prog.</th>
             <th>Operador</th>
             <th>Observación</th>
-            <th>Guardar</th>
+            <th>✓</th>
           </tr>
         </thead>
         <tbody id="cuerpoTabla"></tbody>
@@ -51,10 +58,28 @@
         fetch(`${URL_BACKEND}/api/datos?perfil=${perfil}&horaInicio=${horaInicio}`),
         fetch(`${URL_BACKEND}/api/listas`)
       ]);
-
+      
       todosLosDatos = await resDatos.json();
       listas = await resListas.json();
       renderizarTabla(todosLosDatos);
+    }
+
+    function truncarTexto(texto, maxCaracteres = 25) {
+      if (!texto) return '';
+      const t = String(texto);
+      return t.length > maxCaracteres ? t.substring(0, maxCaracteres) + '...' : t;
+    }
+
+    function mostrarModal(titulo, textoCompleto) {
+      document.getElementById('modalTitulo').textContent = titulo;
+      document.getElementById('modalTextoContenido').textContent = textoCompleto || '(Vacío)';
+      document.getElementById('modalTexto').style.display = 'flex';
+    }
+
+    function cerrarModal(event) {
+      if (!event || event.target === document.getElementById('modalTexto')) {
+        document.getElementById('modalTexto').style.display = 'none';
+      }
     }
 
     function renderizarTabla(datos) {
@@ -62,19 +87,20 @@
       cuerpo.innerHTML = '';
       
       datos.forEach(d => {
+        const valorObs = d.Observacion || 'Pendiente';
         const fila = document.createElement('tr');
         fila.style.backgroundColor = d.color;
         fila.innerHTML = `
-          <td>${d.TAREA || ''}</td>
-          <td>${d.ORDEN || ''}</td>
-          <td>${d.CIUDAD || ''}</td>
-          <td>${d.TECNICO || ''}</td>
-          <td>${d.CONTRATO || ''}</td>
-          <td>${d.Cliente || ''}</td>
-          <td>${d['Fecha de programación desde'] || ''}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${(d.TAREA||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TAREA, 12)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Orden', '${(d.ORDEN||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${(d.CIUDAD||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 22)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${(d.TECNICO||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
+          <td class="texto-corto">${d.CONTRATO || ''}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${(d.Cliente||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.Cliente, 15)}</td>
+          <td class="texto-corto">${d['Fecha de programación'] || ''}</td>
           <td>
             <select class="campo-editar" data-tarea="${d.TAREA}" data-campo="operador">
-              <option value="">-- Seleccionar --</option>
+              <option value="">--</option>
               ${listas.operadores.map(op => 
                 `<option ${(d.Operador || '') === op ? 'selected' : ''}>${op}</option>`
               ).join('')}
@@ -82,8 +108,9 @@
           </td>
           <td>
             <select class="campo-editar" data-tarea="${d.TAREA}" data-campo="observacion">
+              <option value="">--</option>
               ${listas.observaciones.map(obs => 
-                `<option ${(d.Observacion || 'Pendiente') === obs ? 'selected' : ''}>${obs}</option>`
+                `<option ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
               ).join('')}
             </select>
           </td>
@@ -92,6 +119,10 @@
         cuerpo.appendChild(fila);
       });
 
+      asignarEventosGuardado();
+    }
+
+    function asignarEventosGuardado() {
       document.querySelectorAll('.guardar').forEach(btn => {
         btn.onclick = async e => {
           const tarea = e.target.dataset.tarea;
@@ -103,6 +134,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tarea, operador, observacion })
           });
+          
           alert('✅ Guardado');
         };
       });

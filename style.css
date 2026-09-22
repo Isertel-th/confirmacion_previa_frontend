@@ -1,33 +1,125 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-
 body { background: #f0f4f8; color: #333; }
 .login-fondo { background: linear-gradient(135deg, #1e3a5f, #2e5a8f); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-
-.contenedor { max-width: 1400px; margin: 0 auto; padding: 20px; }
+.contenedor { max-width: 100%; margin: 0 auto; padding: 10px; }
 .contenedor-login { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
-
-h1, h2 { margin-bottom: 20px; color: #1e3a5f; }
-h3 { margin: 25px 0 15px; color: #2e5a8f; }
-
+h1, h2 { margin-bottom: 15px; color: #1e3a5f; font-size: 1.4rem; }
+h3 { margin: 15px 0 10px; color: #2e5a8f; font-size: 1.1rem; }
 .grupo { margin-bottom: 15px; }
 label { display: block; margin-bottom: 5px; font-weight: 500; }
-input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
-
-button { padding: 10px 20px; background: #2e7d32; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 15px; margin: 5px; }
+input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
+button { padding: 8px 16px; background: #2e7d32; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin: 4px; }
 button:hover { background: #27652b; }
 button.secundario { background: #666; }
-button.salir { background: #d32f2f; float: right; }
-button.guardar { padding: 5px 10px; font-size: 14px; }
-
+button.salir { background: #d32f2f; }
+button.guardar { padding: 4px 10px; font-size: 15px; background: #2e7d32; border-radius: 4px; min-width: 32px; }
+button.guardar:hover { background: #27652b; }
 .error { color: #d32f2f; margin-top: 10px; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 8px; }
+.filtros { margin-bottom: 12px; }
+.filtros input { max-width: 100%; }
 
-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.tabla-contenedor { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: white; border-radius: 8px; overflow: hidden; }
-th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
-th { background: #1e3a5f; color: white; }
+/* TABLA COMPACTA SIN SCROLL HORIZONTAL */
+.tabla-contenedor { width: 100%; overflow-x: visible; }
+table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  margin-top: 8px; 
+  background: white; 
+  border-radius: 8px; 
+  overflow: hidden; 
+  table-layout: fixed; /* Distribución equilibrada de columnas */
+}
 
-.carga-excel { background: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; }
-.leyenda-colores { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
-.leyenda-colores span { padding: 5px 12px; border-radius: 4px; font-size: 13px; }
-.botones { margin-top: 25px; text-align: center; }
+th, td { 
+  padding: 6px 5px; 
+  text-align: left; 
+  border-bottom: 1px solid #eee; 
+  font-size: 12.5px;
+  vertical-align: middle;
+}
+
+th { 
+  background: #1e3a5f; 
+  color: white; 
+  font-weight: 600; 
+  font-size: 12px;
+}
+
+/* Celdas con texto recortado y expansión al hacer clic */
+td.texto-corto {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 0; /* Permite que table-layout: fixed funcione bien */
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Clase que se activa con doble clic para ver completo */
+td.texto-expandido {
+  white-space: normal;
+  overflow: visible;
+  position: relative;
+  z-index: 10;
+  background: #fffde7;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+/* Selectores compactos */
+td select { 
+  padding: 4px 6px; 
+  font-size: 12px; 
+  border: 1px solid #ccc; 
+  border-radius: 4px; 
+  background: #fff; 
+  width: 100%;
+  min-width: auto;
+}
+
+/* Anchos personalizados por columna */
+th:nth-child(1), td:nth-child(1)  { width: 9%; } /* TAREA */
+th:nth-child(2), td:nth-child(2)  { width: 8%; } /* ORDEN */
+th:nth-child(3), td:nth-child(3)  { width: 16%; } /* CIUDAD */
+th:nth-child(4), td:nth-child(4)  { width: 11%; } /* TÉCNICO */
+th:nth-child(5), td:nth-child(5)  { width: 7%; } /* CONTRATO */
+th:nth-child(6), td:nth-child(6)  { width: 7%; } /* Cliente */
+th:nth-child(7), td:nth-child(7)  { width: 11%; } /* Fecha */
+th:nth-child(8), td:nth-child(8)  { width: 12%; } /* Operador */
+th:nth-child(9), td:nth-child(9)  { width: 12%; } /* Observación */
+th:nth-child(10), td:nth-child(10) { width: 5%; } /* Guardar / Lote */
+th:nth-child(11), td:nth-child(11) { width: 5%; } /* Solo admin: Guardar */
+
+.carga-excel { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
+.leyenda-colores { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
+.leyenda-colores span { padding: 3px 10px; border-radius: 4px; font-size: 12px; }
+.botones { margin-top: 20px; text-align: center; }
+
+/* Modal para ver texto completo */
+.modal-texto {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  display: none;
+}
+.modal-contenido {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  max-width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+.modal-contenido h4 { margin-bottom: 10px; color: #1e3a5f; }
+.modal-contenido p { white-space: pre-wrap; line-height: 1.5; }
+.modal-cerrar { margin-top: 15px; }
