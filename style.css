@@ -80,17 +80,17 @@ td select {
 }
 
 /* Anchos personalizados por columna */
-th:nth-child(1), td:nth-child(1)  { width: 9%; } /* TAREA */
-th:nth-child(2), td:nth-child(2)  { width: 8%; } /* ORDEN */
-th:nth-child(3), td:nth-child(3)  { width: 16%; } /* CIUDAD */
-th:nth-child(4), td:nth-child(4)  { width: 11%; } /* TÉCNICO */
-th:nth-child(5), td:nth-child(5)  { width: 7%; } /* CONTRATO */
-th:nth-child(6), td:nth-child(6)  { width: 7%; } /* Cliente */
-th:nth-child(7), td:nth-child(7)  { width: 11%; } /* Fecha */
-th:nth-child(8), td:nth-child(8)  { width: 12%; } /* Operador */
-th:nth-child(9), td:nth-child(9)  { width: 12%; } /* Observación */
-th:nth-child(10), td:nth-child(10) { width: 5%; } /* Guardar / Lote */
-th:nth-child(11), td:nth-child(11) { width: 5%; } /* Solo admin: Guardar */
+th:nth-child(1), td:nth-child(1)  { width: 8%; }  /* TAREA */
+th:nth-child(2), td:nth-child(2)  { width: 8%; }  /* ORDEN */
+th:nth-child(3), td:nth-child(3)  { width: 14%; } /* CIUDAD */
+th:nth-child(4), td:nth-child(4)  { width: 10%; } /* TÉCNICO */
+th:nth-child(5), td:nth-child(5)  { width: 7%; }  /* CONTRATO */
+th:nth-child(6), td:nth-child(6)  { width: 15%; } /* CLIENTE */
+th:nth-child(7), td:nth-child(7)  { width: 12%; } /* FECHA PROG */
+th:nth-child(8), td:nth-child(8)  { width: 10%; } /* OPERADOR */
+th:nth-child(9), td:nth-child(9)  { width: 10%; } /* OBSERVACIÓN */
+th:nth-child(10), td:nth-child(10) { width: 3%; }  /* LOTE */
+th:nth-child(11), td:nth-child(11) { width: 3%; }  /* GUARDAR */
 
 .carga-excel { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
 .leyenda-colores { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }

@@ -48,7 +48,7 @@
             <th>CIUDAD</th>
             <th>TÉCNICO</th>
             <th>CONTRATO</th>
-            <th>Cliente</th>
+            <th>CLIENTE</th>
             <th>Fecha Prog.</th>
             <th>Operador</th>
             <th>Observación</th>
@@ -95,46 +95,47 @@
       }
     }
 
-    function renderizarTabla(datos) {
-      const cuerpo = document.getElementById('cuerpoTabla');
-      cuerpo.innerHTML = '';
-      
-      datos.forEach(d => {
-        const valorObs = d.Observacion || 'Pendiente';
-        const fila = document.createElement('tr');
-        fila.style.backgroundColor = d.color;
-        fila.innerHTML = `
-          <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${(d.TAREA||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TAREA, 12)}</td>
-          <td class="texto-corto" ondblclick="mostrarModal('Orden', '${(d.ORDEN||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
-          <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${(d.CIUDAD||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 22)}</td>
-          <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${(d.TECNICO||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
-          <td class="texto-corto">${d.CONTRATO || ''}</td>
-          <td class="texto-corto">${d.Cliente || ''}</td>
-          <td class="texto-corto">${truncarTexto(d['Fecha de programación desde'], 12)}</td>
-          <td>
-            <select class="campo-editar" data-tarea="${d.TAREA}" data-campo="operador">
-              <option value="">--</option>
-              ${listas.operadores.map(op => 
-                `<option ${(d.Operador || '') === op ? 'selected' : ''}>${op}</option>`
-              ).join('')}
-            </select>
-          </td>
-          <td>
-            <select class="campo-editar" data-tarea="${d.TAREA}" data-campo="observacion">
-              <option value="">--</option>
-              ${listas.observaciones.map(obs => 
-                `<option ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
-              ).join('')}
-            </select>
-          </td>
-          <td style="text-align:center">${d.lote + 1}</td>
-          <td><button class="guardar" data-tarea="${d.TAREA}">✓</button></td>
-        `;
-        cuerpo.appendChild(fila);
-      });
-
-      asignarEventosGuardado();
-    }
+function renderizarTabla(datos) {
+  const cuerpo = document.getElementById('cuerpoTabla');
+  cuerpo.innerHTML = '';
+  
+  datos.forEach(d => {
+    const valorObs = d.Observacion || 'Pendiente';
+    const fila = document.createElement('tr');
+    fila.style.backgroundColor = d.color;
+    fila.innerHTML = `
+      <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${(d.TAREA||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TAREA, 12)}</td>
+      <td class="texto-corto" ondblclick="mostrarModal('Orden', '${(d.ORDEN||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
+      <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${(d.CIUDAD||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 22)}</td>
+      <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${(d.TECNICO||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
+      <td class="texto-corto" ondblclick="mostrarModal('Contrato', '${(d.CONTRATO||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${d.CONTRATO || ''}</td>
+      <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${(d.CLIENTE||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${d.CLIENTE || ''}</td>
+      <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${(d['Fecha de Programación']||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['Fecha de Programación'], 12)}</td>
+      <td ondblclick="mostrarModal('Operador', '${(d.Operador||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">
+        <select class="campo-editar" data-tarea="${(d.TAREA||'').replace(/'/g, "\\'")}" data-campo="operador">
+          <option value="">--</option>
+          ${listas.operadores.map(op => 
+            `<option ${(d.Operador || '') === op ? 'selected' : ''}>${op}</option>`
+          ).join('')}
+        </select>
+      </td>
+      <td ondblclick="mostrarModal('Observación', '${(valorObs||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">
+        <select class="campo-editar" data-tarea="${(d.TAREA||'').replace(/'/g, "\\'")}" data-campo="observacion">
+          <option value="">--</option>
+          ${listas.observaciones.map(obs => 
+            `<option ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
+          ).join('')}
+        </select>
+      </td>
+      <td style="text-align:center" ondblclick="mostrarModal('Lote', '${(d.lote != null ? d.lote + 1 : '').toString().replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${d.lote + 1}</td>
+      <td ondblclick="mostrarModal('Acción', 'Botón de guardar')" title="Doble clic para ver completo">
+        <button class="guardar" data-tarea="${(d.TAREA||'').replace(/'/g, "\\'")}">✓</button>
+      </td>
+    `;
+    cuerpo.appendChild(fila);
+  });
+  asignarEventosGuardado();
+}
 
     function asignarEventosGuardado() {
       document.querySelectorAll('.guardar').forEach(btn => {
