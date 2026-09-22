@@ -96,29 +96,39 @@ function renderizarTabla(datos) {
   
   datos.forEach(d => {
     const valorObs = d.Observacion || 'Pendiente';
+    const valorOp = d.Operador || '';
     const fila = document.createElement('tr');
     fila.style.backgroundColor = d.color;
+    
     fila.innerHTML = `
       <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${aTexto(d.TAREA).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TAREA, 12)}</td>
       <td class="texto-corto" ondblclick="mostrarModal('Orden', '${aTexto(d.ORDEN).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
       <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${aTexto(d.CIUDAD).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 22)}</td>
       <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${aTexto(d.TECNICO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
       <td class="texto-corto" ondblclick="mostrarModal('Contrato', '${aTexto(d.CONTRATO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${aTexto(d.CONTRATO)}</td>
-<td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CLIENTE, 22)}</td>      
-<td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 18)}</td>          ${listas.operadores.map(op => 
-            `<option ${(aTexto(d.Operador)) === op ? 'selected' : ''}>${op}</option>`
+      <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CLIENTE, 22)}</td>      
+      <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 18)}</td>
+      
+      <!-- DESPLEGABLE OPERADOR CORREGIDO -->
+      <td>
+        <select class="campo-editar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}" data-campo="operador">
+          <option value="">--</option>
+          ${listas.operadores.map(op => 
+            `<option value="${op}" ${valorOp === op ? 'selected' : ''}>${op}</option>`
           ).join('')}
         </select>
       </td>
+
+      <!-- DESPLEGABLE OBSERVACIÓN CORREGIDO -->
       <td ondblclick="mostrarModal('Observación', '${aTexto(valorObs).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">
         <select class="campo-editar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}" data-campo="observacion">
           <option value="">--</option>
           ${listas.observaciones.map(obs => 
-            `<option ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
+            `<option value="${obs}" ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
           ).join('')}
         </select>
       </td>
-      <td style="text-align:center" ondblclick="mostrarModal('Lote', '${aTexto(d.lote != null ? d.lote + 1 : '').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${d.lote + 1}</td>
+      
       <td ondblclick="mostrarModal('Acción', 'Botón de guardar')" title="Doble clic para ver completo">
         <button class="guardar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}">✓</button>
       </td>
