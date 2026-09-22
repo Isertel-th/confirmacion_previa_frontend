@@ -18,63 +18,207 @@
 
   <div class="contenedor">
     <header>
-      <h1>⚙️ Gestión Completa</h1>
+      <h1>⚙️ Gestión Completa (Admin)</h1>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-        <button onclick="descargarExcel()" class="descargar">📥 Descargar</button>
+        <button onclick="descargarExcel()" class="descargar">📥 Descargar Excel</button>
         <button onclick="cerrarSesion()" class="salir">Salir</button>
       </div>
     </header>
+
     <section class="carga-excel">
       <h3>📤 Cargar Archivos</h3>
       <label>Base de Datos:</label>
       <input type="file" id="archivoBase" accept=".xlsx">
       <button onclick="subirArchivo('base')">Subir Base</button>
     </section>
-    <div class="leyenda-colores">
-      <span>Lotes:</span>
-      <span style="background:#e3f2fd">1</span>
-      <span style="background:#c8e6c9">2</span>
-      <span style="background:#fff9c4">3</span>
-      <span style="background:#f8bbd9">4</span>
-      <span style="background:#e1bee8">5</span>
-      <span style="background:#d7ccc8">6</span>
-    </div>
+
+    <!-- SECCIÓN PENDIENTES -->
+    <h3>⏳ Tareas Pendientes</h3>
     <div class="tabla-contenedor">
       <table>
         <thead>
-          <tr>
-            <th>TAREA</th>
-            <th>ORDEN</th>
-            <th>CIUDAD</th>
-            <th>TÉCNICO</th>
-            <th>CONTRATO</th>
-            <th>CLIENTE</th>
-            <th>Fecha Prog.</th>
-            <th>Operador</th>
-            <th>Observación</th>
-            <th>Lote</th>
-            <th>✓</th>
-          </tr>
+          <tr id="encabezadoPendientes"></tr>
         </thead>
-        <tbody id="cuerpoTabla"></tbody>
+        <tbody id="cuerpoTablaPendientes"></tbody>
+      </table>
+    </div>
+
+    <!-- SECCIÓN GESTIONADOS -->
+    <h3>✅ Tareas Gestionadas</h3>
+    <div class="tabla-contenedor">
+      <table>
+        <thead>
+          <tr id="encabezadoGestionados"></tr>
+        </thead>
+        <tbody id="cuerpoTablaGestionados"></tbody>
       </table>
     </div>
   </div>
 
   <script>
     const URL_BACKEND = 'https://confirmacion-previa-backend.onrender.com';
+    const usuarioLogeado = localStorage.getItem('usuario') || 'Admin';
     let todosLosDatos = [];
-    let listas = { operadores: [], observaciones: [] };
+    let listas = { observaciones: [] };
+    let filtrosPendientes = {};
+    let filtrosGestionados = {};
+
+    const columnas = [
+      { clave: 'TAREA', nombre: 'TAREA' },
+      { clave: 'ORDEN', nombre: 'ORDEN' },
+      { clave: 'CIUDAD', nombre: 'CIUDAD' },
+      { clave: 'TECNICO', nombre: 'TÉCNICO' },
+      { clave: 'CONTRATO', nombre: 'CONTRATO' },
+      { clave: 'CLIENTE', nombre: 'CLIENTE' },
+      { clave: 'FECHA DE PROGRAMACIÓN', nombre: 'Fecha Prog.' },
+      { clave: 'Operador', nombre: 'Operador' },
+      { clave: 'Fecha de Registro', nombre: 'Fecha Registro' },
+      { clave: 'Observacion', nombre: 'Observación' },
+      { clave: 'ACCION', nombre: '✓' }
+    ];
 
     async function cargarDatos() {
-      const [res, resListas] = await Promise.all([
-        fetch(`${URL_BACKEND}/api/datos?perfil=admin&horaInicio=${new Date().toISOString()}`),
-        fetch(`${URL_BACKEND}/api/listas`)
-      ]);
+      try {
+        const [resDatos, resListas] = await Promise.all([
+          fetch(`${URL_BACKEND}/api/datos?perfil=admin&horaInicio=${new Date().toISOString()}`),
+          fetch(`${URL_BACKEND}/api/listas`)
+        ]);
+        
+        todosLosDatos = await resDatos.json();
+        listas = await resListas.json();
+        
+        generarEncabezados('encabezadoPendientes', 'pendientes');
+        generarEncabezados('encabezadoGestionados', 'gestionados');
+        renderizarTablas();
+      } catch (e) {
+        console.error('Error al cargar datos:', e);
+      }
+    }
+
+    function generarEncabezados(idFila, tipo) {
+      const tr = document.getElementById(idFila);
+      tr.innerHTML = '';
       
-      todosLosDatos = await res.json();
-      listas = await resListas.json();
-      renderizarTabla(todosLosDatos);
+      columnas.forEach(col => {
+        const th = document.createElement('th');
+        if (col.clave === 'ACCION') {
+          th.textContent = col.nombre;
+        } else {
+          th.innerHTML = `
+            ${col.nombre}
+            <input type="text" class="filtro-columna" placeholder="Filtrar..." 
+                   data-clave="${col.clave}" data-tipo="${tipo}" onkeyup="filtrarTabla(event)">
+          `;
+        }
+        tr.appendChild(th);
+      });
+    }
+
+    function filtrarTabla(event) {
+      const input = event.target;
+      const clave = input.dataset.clave;
+      const tipo = input.dataset.tipo;
+      const valor = input.value.toLowerCase();
+
+      if (tipo === 'pendientes') {
+        filtrosPendientes[clave] = valor;
+      } else {
+        filtrosGestionados[clave] = valor;
+      }
+
+      renderizarTablas();
+    }
+
+    function aplicarFiltroArray(datos, filtros) {
+      return datos.filter(d => {
+        return Object.keys(filtros).every(clave => {
+          if (!filtros[clave]) return true;
+          const valorCampo = aTexto(d[clave]).toLowerCase();
+          return valorCampo.includes(filtros[clave]);
+        });
+      });
+    }
+
+    function renderizarTablas() {
+      // Separar por estado
+      let pendientes = todosLosDatos.filter(d => !d.Observacion || d.Observacion === 'Pendiente');
+      let gestionados = todosLosDatos.filter(d => d.Observacion && d.Observacion !== 'Pendiente');
+
+      // Aplicar filtros independientes
+      pendientes = aplicarFiltroArray(pendientes, filtrosPendientes);
+      gestionados = aplicarFiltroArray(gestionados, filtrosGestionados);
+
+      renderizarCuerpo('cuerpoTablaPendientes', pendientes);
+      renderizarCuerpo('cuerpoTablaGestionados', gestionados);
+    }
+
+    function renderizarCuerpo(idCuerpo, datos) {
+      const cuerpo = document.getElementById(idCuerpo);
+      cuerpo.innerHTML = '';
+
+      datos.forEach(d => {
+        const valorObs = d.Observacion || 'Pendiente';
+        const valorOp = d.Operador || '';
+        const fila = document.createElement('tr');
+
+        const etiquetaNuevo = d.NuevoRegistro ? '<span class="nuevo-registro">Nuevo registro</span>' : '';
+
+        fila.innerHTML = `
+          <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${aTexto(d.TAREA).replace(/'/g, "\\'")}')">
+            ${truncarTexto(d.TAREA, 12)} ${etiquetaNuevo}
+          </td>
+          <td class="texto-corto" ondblclick="mostrarModal('Orden', '${aTexto(d.ORDEN).replace(/'/g, "\\'")}')">${truncarTexto(d.ORDEN, 12)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${aTexto(d.CIUDAD).replace(/'/g, "\\'")}')">${truncarTexto(d.CIUDAD, 18)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${aTexto(d.TECNICO).replace(/'/g, "\\'")}')">${truncarTexto(d.TECNICO, 15)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Contrato', '${aTexto(d.CONTRATO).replace(/'/g, "\\'")}')">${aTexto(d.CONTRATO)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')">${truncarTexto(d.CLIENTE, 18)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Fecha Prog.', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 16)}</td>
+          <td class="texto-corto">${aTexto(valorOp)}</td>
+          <td class="texto-corto">${aTexto(d['Fecha de Registro'])}</td>
+          
+          <td>
+            <select class="campo-editar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}">
+              <option value="">--</option>
+              ${listas.observaciones.map(obs => 
+                `<option value="${obs}" ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
+              ).join('')}
+            </select>
+          </td>
+
+          <td>
+            <button class="guardar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}">✓</button>
+          </td>
+        `;
+        cuerpo.appendChild(fila);
+      });
+      asignarEventosGuardado();
+    }
+
+    function asignarEventosGuardado() {
+      document.querySelectorAll('.guardar').forEach(btn => {
+        btn.onclick = async e => {
+          const tarea = e.target.dataset.tarea;
+          const selectObs = document.querySelector(`select[data-tarea="${tarea}"]`);
+          const observacion = selectObs ? selectObs.value : 'Pendiente';
+
+          const hoy = new Date();
+          const fechaFormateada = hoy.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
+
+          await fetch(`${URL_BACKEND}/api/editar`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tarea,
+              operador: usuarioLogeado,
+              observacion,
+              fechaRegistro: fechaFormateada
+            })
+          });
+
+          alert('✅ Guardado correctamente');
+          cargarDatos();
+        };
+      });
     }
 
     function truncarTexto(texto, maxCaracteres = 25) {
@@ -83,12 +227,10 @@
       return t.length > maxCaracteres ? t.substring(0, maxCaracteres) + '...' : t;
     }
 
-// Convierte cualquier valor a texto de forma segura
-function aTexto(valor) {
-  if (valor === null || valor === undefined) return '';
-  return String(valor);
-}
-
+    function aTexto(valor) {
+      if (valor === null || valor === undefined) return '';
+      return String(valor);
+    }
 
     function mostrarModal(titulo, textoCompleto) {
       document.getElementById('modalTitulo').textContent = titulo;
@@ -102,73 +244,6 @@ function aTexto(valor) {
       }
     }
 
-function renderizarTabla(datos) {
-  const cuerpo = document.getElementById('cuerpoTabla');
-  cuerpo.innerHTML = '';
-  
-  datos.forEach(d => {
-    const valorObs = d.Observacion || 'Pendiente';
-    const valorOp = d.Operador || '';
-    const fila = document.createElement('tr');
-    fila.style.backgroundColor = d.color;
-    
-    fila.innerHTML = `
-      <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${aTexto(d.TAREA).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TAREA, 12)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Orden', '${aTexto(d.ORDEN).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${aTexto(d.CIUDAD).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 22)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${aTexto(d.TECNICO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Contrato', '${aTexto(d.CONTRATO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${aTexto(d.CONTRATO)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CLIENTE, 22)}</td>     
-      <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 18)}</td>
-      
-      <!-- DESPLEGABLE OPERADOR CORREGIDO -->
-      <td>
-        <select class="campo-editar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}" data-campo="operador">
-          <option value="">--</option>
-          ${listas.operadores.map(op => 
-            `<option value="${op}" ${valorOp === op ? 'selected' : ''}>${op}</option>`
-          ).join('')}
-        </select>
-      </td>
-
-      <!-- DESPLEGABLE OBSERVACIÓN CORREGIDO -->
-      <td ondblclick="mostrarModal('Observación', '${aTexto(valorObs).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">
-        <select class="campo-editar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}" data-campo="observacion">
-          <option value="">--</option>
-          ${listas.observaciones.map(obs => 
-            `<option value="${obs}" ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
-          ).join('')}
-        </select>
-      </td>
-      
-      <td style="text-align:center" ondblclick="mostrarModal('Lote', '${aTexto(d.lote != null ? d.lote + 1 : '').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${d.lote + 1}</td>
-      <td ondblclick="mostrarModal('Acción', 'Botón de guardar')" title="Doble clic para ver completo">
-        <button class="guardar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}">✓</button>
-      </td>
-    `;
-    cuerpo.appendChild(fila);
-  });
-  asignarEventosGuardado();
-}
-
-    function asignarEventosGuardado() {
-      document.querySelectorAll('.guardar').forEach(btn => {
-        btn.onclick = async e => {
-          const tarea = e.target.dataset.tarea;
-          const operador = document.querySelector(`select[data-tarea="${tarea}"][data-campo="operador"]`).value;
-          const observacion = document.querySelector(`select[data-tarea="${tarea}"][data-campo="observacion"]`).value;
-          
-          await fetch(`${URL_BACKEND}/api/editar`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tarea, operador, observacion })
-          });
-          
-          alert('✅ Guardado');
-        };
-      });
-    }
-
     async function descargarExcel() {
       window.location.href = `${URL_BACKEND}/api/descargar`;
     }
@@ -176,11 +251,11 @@ function renderizarTabla(datos) {
     async function subirArchivo(tipo) {
       const input = document.getElementById('archivoBase');
       if (!input.files[0]) return alert('Selecciona un archivo');
-      
+
       const form = new FormData();
       form.append('archivo', input.files[0]);
       form.append('tipo', tipo);
-      
+
       const res = await fetch(`${URL_BACKEND}/api/cargar-excel`, {
         method: 'POST',
         body: form

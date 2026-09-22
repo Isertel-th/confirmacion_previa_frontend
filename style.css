@@ -20,7 +20,10 @@ header { display: flex; justify-content: space-between; align-items: center; mar
 .filtros input { max-width: 100%; }
 
 /* TABLA COMPACTA SIN SCROLL HORIZONTAL */
-.tabla-contenedor { width: 100%; overflow-x: visible; }
+.tabla-contenedor { width: 100%; overflow-x: visible; max-height: 70vh; overflow-y: auto; margin-bottom: 30px; }
+
+thead { position: sticky; top: 0; z-index: 100; }
+
 table { 
   width: 100%; 
   border-collapse: collapse; 
@@ -39,13 +42,9 @@ th, td {
   vertical-align: middle;
 }
 
-th { 
-  background: #1e3a5f; 
-  color: white; 
-  font-weight: 600; 
-  font-size: 12px;
-}
+th { background: #1e3a5f; color: white; font-weight: 600; font-size: 12px; }
 
+th input.filtro-columna { width: 100%; padding: 4px; margin-top: 4px; font-size: 11px; border: none; border-radius: 3px; color: black; }
 /* Celdas con texto recortado y expansión al hacer clic */
 td.texto-corto {
   white-space: nowrap;
@@ -79,18 +78,20 @@ td select {
   min-width: auto;
 }
 
-/* Anchos personalizados por columna */
-th:nth-child(1), td:nth-child(1)  { width: 8%; }  /* TAREA */
+/* Anchos personalizados actualizados */
+th:nth-child(1), td:nth-child(1)  { width: 10%; } /* TAREA */
 th:nth-child(2), td:nth-child(2)  { width: 8%; }  /* ORDEN */
-th:nth-child(3), td:nth-child(3)  { width: 14%; } /* CIUDAD */
-th:nth-child(4), td:nth-child(4)  { width: 10%; } /* TÉCNICO */
-th:nth-child(5), td:nth-child(5)  { width: 7%; }  /* CONTRATO */
-th:nth-child(6), td:nth-child(6)  { width: 15%; } /* CLIENTE */
-th:nth-child(7), td:nth-child(7)  { width: 12%; } /* FECHA PROG */
-th:nth-child(8), td:nth-child(8)  { width: 10%; } /* OPERADOR */
-th:nth-child(9), td:nth-child(9)  { width: 10%; } /* OBSERVACIÓN */
-th:nth-child(10), td:nth-child(10) { width: 3%; }  /* LOTE */
-th:nth-child(11), td:nth-child(11) { width: 3%; }  /* GUARDAR */
+th:nth-child(3), td:nth-child(3)  { width: 12%; } /* CIUDAD */
+th:nth-child(4), td:nth-child(4)  { width: 9%; }  /* TÉCNICO */
+th:nth-child(5), td:nth-child(5)  { width: 8%; }  /* CONTRATO */
+th:nth-child(6), td:nth-child(6)  { width: 14%; } /* CLIENTE */
+th:nth-child(7), td:nth-child(7)  { width: 10%; } /* FECHA PROG */
+th:nth-child(8), td:nth-child(8)  { width: 9%; }  /* OPERADOR */
+th:nth-child(9), td:nth-child(9)  { width: 10%; } /* FECHA REGISTRO */
+th:nth-child(10), td:nth-child(10) { width: 12%; } /* OBSERVACIÓN */
+th:nth-child(11), td:nth-child(11) { width: 4%; }  /* GUARDAR */
+
+.nuevo-registro { color: red; font-size: 10px; font-weight: bold; display: block; margin-top: 2px; }
 
 .carga-excel { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; }
 .leyenda-colores { display: flex; gap: 6px; margin: 8px 0; flex-wrap: wrap; }
