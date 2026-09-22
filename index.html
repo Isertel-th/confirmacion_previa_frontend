@@ -22,9 +22,8 @@
       <p id="mensajeError" class="error"></p>
     </form>
   </div>
-
   <script>
-    const URL_BACKEND = 'https://confirmacion-previa-backend.onrender.com'; // Reemplaza con tu URL
+    const URL_BACKEND = 'https://confirmacion-previa-backend.onrender.com';
 
     document.getElementById('formLogin').addEventListener('submit', async e => {
       e.preventDefault();
@@ -42,7 +41,13 @@
         localStorage.setItem('perfil', perfil);
         localStorage.setItem('usuario', nombre);
         localStorage.setItem('horaInicio', new Date().toISOString());
-        window.location.href = 'confirmacion.html';
+
+        // 🔹 Redirección directa según perfil
+        if (perfil === 'admin') {
+          window.location.href = 'admin.html';
+        } else {
+          window.location.href = 'dashboard.html';
+        }
       } else {
         document.getElementById('mensajeError').textContent = 'Usuario o clave incorrectos';
       }
