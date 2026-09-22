@@ -64,12 +64,14 @@
       renderizarTabla(todosLosDatos);
     }
 
+    // Función para truncar texto largo
     function truncarTexto(texto, maxCaracteres = 25) {
       if (!texto) return '';
       const t = String(texto);
       return t.length > maxCaracteres ? t.substring(0, maxCaracteres) + '...' : t;
     }
 
+    // Mostrar modal con texto completo
     function mostrarModal(titulo, textoCompleto) {
       document.getElementById('modalTitulo').textContent = titulo;
       document.getElementById('modalTextoContenido').textContent = textoCompleto || '(Vacío)';
@@ -96,8 +98,8 @@
           <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${(d.CIUDAD||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 22)}</td>
           <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${(d.TECNICO||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
           <td class="texto-corto">${d.CONTRATO || ''}</td>
-          <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${(d.Cliente||'').replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.Cliente, 15)}</td>
-          <td class="texto-corto">${d['Fecha de programación'] || ''}</td>
+          <td class="texto-corto">${d.Cliente || ''}</td>
+          <td class="texto-corto">${truncarTexto(d['Fecha de programación desde'], 12)}</td>
           <td>
             <select class="campo-editar" data-tarea="${d.TAREA}" data-campo="operador">
               <option value="">--</option>
