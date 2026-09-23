@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tareas — Operador</title>
 
-  <!-- PROTECCIÓN DE RUTA (Verificación inmediata antes de cargar el HTML) -->
   <script>
     (function guardiaOperador() {
       const usuario = localStorage.getItem('usuario');
@@ -20,12 +19,12 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- Modal para ver texto completo con doble clic -->
+  <!-- Modal corregido (sin la clase .guardar) -->
   <div id="modalTexto" class="modal-texto" onclick="cerrarModal(event)">
     <div class="modal-contenido" onclick="event.stopPropagation()">
       <h4 id="modalTitulo"></h4>
       <p id="modalTextoContenido"></p>
-      <button class="guardar" style="background:#2e7d32;padding:8px 20px;" onclick="cerrarModal()">Cerrar</button>
+      <button class="btn-cerrar-modal" style="background:#2e7d32; color:white; border:none; padding:8px 20px; border-radius:4px; cursor:pointer;" onclick="cerrarModal()">Cerrar</button>
     </div>
   </div>
 
@@ -43,6 +42,11 @@
 
     <!-- PESTAÑA PENDIENTES -->
     <div id="tabPendientes" class="tab-contenido activo">
+      <div style="margin-bottom: 10px;">
+        <button id="btnGuardarSeleccionados" onclick="guardarSeleccionados()" style="background:#2e7d32; font-weight:bold;">
+          💾 Guardar Seleccionados como Gestionado
+        </button>
+      </div>
       <div class="tabla-contenedor">
         <table>
           <thead>
@@ -91,7 +95,7 @@
     async function cargarDatos() {
       try {
         const perfil = localStorage.getItem('perfil');
-        const horaInicio = localStorage.getItem('horaInicio');
+        const horaInicio = localStorage.getItem('horaInicio') || new Date().toISOString();
 
         const [resDatos, resListas] = await Promise.all([
           fetch(`${URL_BACKEND}/api/datos?perfil=${perfil}&horaInicio=${horaInicio}`),
@@ -129,7 +133,11 @@
       columnas.forEach(col => {
         const th = document.createElement('th');
         if (col.clave === 'ACCION') {
-          th.textContent = col.nombre;
+          if (tipo === 'pendientes') {
+            th.innerHTML = `<input type="checkbox" id="chkSeleccionarTodos" onchange="toggleSeleccionarTodos(this)">`;
+          } else {
+            th.textContent = '✓';
+          }
         } else {
           th.innerHTML = `
             ${col.nombre}
@@ -138,6 +146,12 @@
           `;
         }
         tr.appendChild(th);
+      });
+    }
+
+    function toggleSeleccionarTodos(chkMaster) {
+      document.querySelectorAll('.chk-tarea:not(:disabled)').forEach(chk => {
+        chk.checked = chkMaster.checked;
       });
     }
 
@@ -174,24 +188,25 @@
       pendientes = aplicarFiltroArray(pendientes, filtrosPendientes);
       gestionados = aplicarFiltroArray(gestionados, filtrosGestionados);
 
-      renderizarCuerpo('cuerpoTablaPendientes', pendientes);
-      renderizarCuerpo('cuerpoTablaGestionados', gestionados);
+      renderizarCuerpo('cuerpoTablaPendientes', pendientes, false);
+      renderizarCuerpo('cuerpoTablaGestionados', gestionados, true);
     }
 
-    function renderizarCuerpo(idCuerpo, datos) {
+    function renderizarCuerpo(idCuerpo, datos, esGestionado) {
       const cuerpo = document.getElementById(idCuerpo);
       cuerpo.innerHTML = '';
 
       datos.forEach(d => {
-        const valorObs = d.Observacion || 'Pendiente';
+        const valorObs = d.Observacion || '';
         const valorOp = d.Operador || '';
         const valorFechaReg = d['Fecha de Registro'] || '';
         const fila = document.createElement('tr');
-
         const etiquetaNuevo = d.NuevoRegistro ? '<span class="nuevo-registro">Nuevo registro</span>' : '';
 
+        const tareaLimpia = aTexto(d.TAREA).replace(/'/g, "\\'");
+
         fila.innerHTML = `
-          <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${aTexto(d.TAREA).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">
+          <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${tareaLimpia}')" title="Doble clic para ver completo">
             ${truncarTexto(d.TAREA, 12)} ${etiquetaNuevo}
           </td>
           <td class="texto-corto" ondblclick="mostrarModal('Orden', '${aTexto(d.ORDEN).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
@@ -202,52 +217,62 @@
           <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 16)}</td>
           
           <td class="texto-corto" ondblclick="mostrarModal('Operador', '${aTexto(valorOp).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorOp, 15)}</td>
-          
           <td class="texto-corto" ondblclick="mostrarModal('Fecha de Registro', '${aTexto(valorFechaReg).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorFechaReg, 15)}</td>
           
           <td>
-            <select class="campo-editar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}">
-              <option value="">--</option>
+            <select class="campo-editar" data-tarea="${tareaLimpia}" ${esGestionado ? 'disabled' : ''}>
+              <option value="">-- Seleccionar --</option>
               ${listas.observaciones.map(obs => 
                 `<option value="${obs}" ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
               ).join('')}
             </select>
           </td>
 
-          <td>
-            <button class="guardar" data-tarea="${aTexto(d.TAREA).replace(/'/g, "\\'")}">✓</button>
+          <td style="text-align: center;">
+            <input type="checkbox" class="chk-tarea" data-tarea="${tareaLimpia}" ${esGestionado ? 'disabled checked' : ''}>
           </td>
         `;
         cuerpo.appendChild(fila);
       });
-      asignarEventosGuardado();
     }
 
-    function asignarEventosGuardado() {
-      document.querySelectorAll('.guardar').forEach(btn => {
-        btn.onclick = async e => {
-          const tarea = e.target.dataset.tarea;
-          const selectObs = document.querySelector(`select[data-tarea="${tarea}"]`);
-          const observacion = selectObs ? selectObs.value : 'Pendiente';
+    async function guardarSeleccionados() {
+      const seleccionados = document.querySelectorAll('.chk-tarea:checked:not(:disabled)');
+      if (seleccionados.length === 0) {
+        return alert('Selecciona al menos una tarea pendiente para guardar.');
+      }
 
-          const hoy = new Date();
-          const fechaFormateada = hoy.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
+      const listaPayload = [];
+      const hoy = new Date();
+      const fechaFormateada = hoy.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
 
-          await fetch(`${URL_BACKEND}/api/editar`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              tarea,
-              operador: usuarioLogeado,
-              observacion,
-              fechaRegistro: fechaFormateada
-            })
-          });
+      for (let chk of seleccionados) {
+        const tarea = chk.dataset.tarea;
+        const selectObs = document.querySelector(`select[data-tarea="${tarea}"]`);
+        const observacion = selectObs ? selectObs.value : '';
 
-          alert('✅ Guardado correctamente');
-          cargarDatos();
-        };
+        if (!observacion) {
+          alert(`La tarea "${tarea}" fue seleccionada pero no tiene una observación asignada.`);
+          return;
+        }
+
+        listaPayload.push({
+          tarea,
+          operador: usuarioLogeado,
+          observacion,
+          fechaRegistro: fechaFormateada
+        });
+      }
+
+      const res = await fetch(`${URL_BACKEND}/api/editar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(listaPayload)
       });
+
+      const data = await res.json();
+      alert(`✅ ${data.mensaje}`);
+      cargarDatos();
     }
 
     function truncarTexto(texto, maxCaracteres = 25) {
@@ -268,7 +293,7 @@
     }
 
     function cerrarModal(event) {
-      if (!event || event.target === document.getElementById('modalTexto')) {
+      if (!event || event.target === document.getElementById('modalTexto') || event.target.classList.contains('btn-cerrar-modal')) {
         document.getElementById('modalTexto').style.display = 'none';
       }
     }
