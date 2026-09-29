@@ -177,43 +177,36 @@
       });
     }
 
-function renderizarTablas() {
-  // Limpiamos y normalizamos la observación que viene de Google Sheets
-  let pendientes = todosLosDatos.filter(d => {
-    const obs = (d.Observacion || '').toString().trim().toLowerCase();
-    return !obs || obs === 'pendiente' || obs === '-- seleccionar --';
-  });
+    function renderizarTablas() {
+      let pendientes = todosLosDatos.filter(d => !d.Observacion || d.Observacion === 'Pendiente');
+      let gestionados = todosLosDatos.filter(d => d.Observacion && d.Observacion !== 'Pendiente');
 
-  let gestionados = todosLosDatos.filter(d => {
-    const obs = (d.Observacion || '').toString().trim().toLowerCase();
-    return obs && obs !== 'pendiente' && obs !== '-- seleccionar --';
-  });
+      document.getElementById('countPendientes').textContent = pendientes.length;
+      document.getElementById('countGestionados').textContent = gestionados.length;
 
-  document.getElementById('countPendientes').textContent = pendientes.length;
-  document.getElementById('countGestionados').textContent = gestionados.length;
+      pendientes = aplicarFiltroArray(pendientes, filtrosPendientes);
+      gestionados = aplicarFiltroArray(gestionados, filtrosGestionados);
 
-  pendientes = aplicarFiltroArray(pendientes, filtrosPendientes);
-  gestionados = aplicarFiltroArray(gestionados, filtrosGestionados);
-
-  renderizarCuerpo('cuerpoTablaPendientes', pendientes, false);
-  renderizarCuerpo('cuerpoTablaGestionados', gestionados, true);
-}
+      renderizarCuerpo('cuerpoTablaPendientes', pendientes, false);
+      renderizarCuerpo('cuerpoTablaGestionados', gestionados, true);
+    }
 
 function renderizarCuerpo(idCuerpo, datos, esGestionado) {
   const cuerpo = document.getElementById(idCuerpo);
   cuerpo.innerHTML = '';
 
   datos.forEach(d => {
+    // Si la tarea está Pendiente (no gestionada), forzamos a que Operador y Fecha Registro se vean VACÍOS
     const obsLimpia = (d.Observacion || '').toString().trim();
     const esPendiente = !obsLimpia || obsLimpia.toLowerCase() === 'pendiente';
 
-    // Muestra exactamente lo que hay en el Sheets: si en Sheets está vacío, en pantalla se ve VACÍO
     const valorObs = esPendiente ? '' : obsLimpia;
-    const valorOp = d.Operador || '';
-    const valorFechaReg = d['Fecha de Registro'] || '';
+    const valorOp = esPendiente ? '' : (d.Operador || '');
+    const valorFechaReg = esPendiente ? '' : (d['Fecha de Registro'] || '');
 
     const fila = document.createElement('tr');
     const etiquetaNuevo = d.NuevoRegistro ? '<span class="nuevo-registro">Nuevo registro</span>' : '';
+
     const tareaLimpia = aTexto(d.TAREA).replace(/'/g, "\\'");
 
     fila.innerHTML = `
