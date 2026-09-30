@@ -33,7 +33,6 @@
       <h1>⚙️ Gestión Completa (Admin - Google Drive Sync)</h1>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
         <button onclick="descargarExcel()" class="descargar" style="background:#1565c0;">📥 Descargar Base Completa</button>
-        <button onclick="vaciarBaseTotal()" style="background:#d32f2f;">🗑️ Vaciar Base de Datos</button>
         <button onclick="cerrarSesion()" class="salir">Salir</button>
       </div>
     </header>
@@ -351,20 +350,6 @@ async function guardarSeleccionados() {
 
     function descargarExcel() {
       window.location.href = `${URL_BACKEND}/api/descargar`;
-    }
-
-    async function vaciarBaseTotal() {
-      const confirmacion = confirm('⚠️ ¿Estás seguro de vaciar toda la base de datos de Google Drive?');
-      if (!confirmacion) return;
-
-      try {
-        const res = await fetch(`${URL_BACKEND}/api/reset-base`, { method: 'POST' });
-        const data = await res.json();
-        alert(data.mensaje);
-        cargarDatos();
-      } catch (error) {
-        alert('Error al vaciar la base de datos');
-      }
     }
 
     async function subirArchivo(tipo) {
