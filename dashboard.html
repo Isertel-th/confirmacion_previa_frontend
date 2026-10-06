@@ -35,8 +35,9 @@
 
     <!-- MENÚ DE PESTAÑAS -->
     <div class="tabs-menu">
-      <button class="tab-btn activo" id="btnTabPendientes" onclick="cambiarTab('pendientes')">⏳ Pendientes (<span id="countPendientes">0</span>)</button>
-      <button class="tab-btn" id="btnTabGestionados" onclick="cambiarTab('gestionados')">✅ Gestionadas (<span id="countGestionados">0</span>)</button>
+      <button class="tab-btn activo" id="btnTabPendientes" onclick="cambiarTab('pendientes')">⏳ Pendientes Hoy/Ayer (<span id="countPendientes">0</span>)</button>
+      <button class="tab-btn" id="btnTabGestionados" onclick="cambiarTab('gestionados')">✅ Gestionadas Hoy/Ayer (<span id="countGestionados">0</span>)</button>
+      <button class="tab-btn" id="btnTabAntiguos" onclick="cambiarTab('antiguos')">📦 Antiguos (<span id="countAntiguos">0</span>)</button>
     </div>
 
     <!-- PESTAÑA PENDIENTES -->
@@ -67,6 +68,18 @@
         </table>
       </div>
     </div>
+
+    <!-- PESTAÑA ANTIGUOS -->
+    <div id="tabAntiguos" class="tab-contenido">
+      <div class="tabla-contenedor">
+        <table>
+          <thead>
+            <tr id="encabezadoAntiguos"></tr>
+          </thead>
+          <tbody id="cuerpoTablaAntiguos"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -76,6 +89,7 @@
     let listas = { observaciones: [] };
     let filtrosPendientes = {};
     let filtrosGestionados = {};
+    let filtrosAntiguos = {};
 
     const columnas = [
       { clave: 'TAREA', nombre: 'TAREA' },
@@ -94,10 +108,9 @@
     async function cargarDatos() {
       try {
         const perfil = localStorage.getItem('perfil');
-        const horaInicio = localStorage.getItem('horaInicio') || new Date().toISOString();
 
         const [resDatos, resListas] = await Promise.all([
-          fetch(`${URL_BACKEND}/api/datos?perfil=${perfil}&horaInicio=${horaInicio}`),
+          fetch(`${URL_BACKEND}/api/datos?perfil=${perfil}`),
           fetch(`${URL_BACKEND}/api/listas`)
         ]);
 
@@ -106,6 +119,7 @@
 
         generarEncabezados('encabezadoPendientes', 'pendientes');
         generarEncabezados('encabezadoGestionados', 'gestionados');
+        generarEncabezados('encabezadoAntiguos', 'antiguos');
         renderizarTablas();
       } catch (e) {
         console.error('Error al cargar datos:', e);
@@ -119,9 +133,12 @@
       if (tab === 'pendientes') {
         document.getElementById('btnTabPendientes').classList.add('activo');
         document.getElementById('tabPendientes').classList.add('activo');
-      } else {
+      } else if (tab === 'gestionados') {
         document.getElementById('btnTabGestionados').classList.add('activo');
         document.getElementById('tabGestionados').classList.add('activo');
+      } else {
+        document.getElementById('btnTabAntiguos').classList.add('activo');
+        document.getElementById('tabAntiguos').classList.add('activo');
       }
     }
 
@@ -149,7 +166,7 @@
     }
 
     function toggleSeleccionarTodos(chkMaster) {
-      document.querySelectorAll('.chk-tarea:not(:disabled)').forEach(chk => {
+      document.querySelectorAll('#cuerpoTablaPendientes .chk-tarea:not(:disabled)').forEach(chk => {
         chk.checked = chkMaster.checked;
       });
     }
@@ -162,8 +179,10 @@
 
       if (tipo === 'pendientes') {
         filtrosPendientes[clave] = valor;
-      } else {
+      } else if (tipo === 'gestionados') {
         filtrosGestionados[clave] = valor;
+      } else {
+        filtrosAntiguos[clave] = valor;
       }
       renderizarTablas();
     }
@@ -177,142 +196,151 @@
       });
     }
 
-function renderizarTablas() {
-  // Limpiamos y normalizamos la observación que viene de Google Sheets
-  let pendientes = todosLosDatos.filter(d => {
-    const obs = (d.Observacion || '').toString().trim().toLowerCase();
-    return !obs || obs === 'pendiente' || obs === '-- seleccionar --';
-  });
-
-  let gestionados = todosLosDatos.filter(d => {
-    const obs = (d.Observacion || '').toString().trim().toLowerCase();
-    return obs && obs !== 'pendiente' && obs !== '-- seleccionar --';
-  });
-
-  document.getElementById('countPendientes').textContent = pendientes.length;
-  document.getElementById('countGestionados').textContent = gestionados.length;
-
-  pendientes = aplicarFiltroArray(pendientes, filtrosPendientes);
-  gestionados = aplicarFiltroArray(gestionados, filtrosGestionados);
-
-  renderizarCuerpo('cuerpoTablaPendientes', pendientes, false);
-  renderizarCuerpo('cuerpoTablaGestionados', gestionados, true);
-}
-
-function renderizarCuerpo(idCuerpo, datos, esGestionado) {
-  const cuerpo = document.getElementById(idCuerpo);
-  cuerpo.innerHTML = '';
-
-  datos.forEach(d => {
-    const obsLimpia = (d.Observacion || '').toString().trim();
-    const esPendiente = !obsLimpia || obsLimpia.toLowerCase() === 'pendiente';
-
-    // Muestra exactamente lo que hay en el Sheets: si en Sheets está vacío, en pantalla se ve VACÍO
-    const valorObs = esPendiente ? '' : obsLimpia;
-    const valorOp = d.Operador || '';
-    const valorFechaReg = d['Fecha de Registro'] || '';
-
-    const fila = document.createElement('tr');
-    const etiquetaNuevo = d.NuevoRegistro ? '<span class="nuevo-registro">Nuevo registro</span>' : '';
-    const tareaLimpia = aTexto(d.TAREA).replace(/'/g, "\\'");
-
-    fila.innerHTML = `
-      <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${tareaLimpia}')" title="Doble clic para ver completo">
-        ${truncarTexto(d.TAREA, 12)} ${etiquetaNuevo}
-      </td>
-      <td class="texto-corto" ondblclick="mostrarModal('Orden', '${aTexto(d.ORDEN).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${aTexto(d.CIUDAD).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 18)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${aTexto(d.TECNICO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Contrato', '${aTexto(d.CONTRATO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${aTexto(d.CONTRATO)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CLIENTE, 18)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 16)}</td>
+    function esHoyOAyer(fechaStr) {
+      if (!fechaStr) return false;
+      const f = new Date(fechaStr);
+      if (isNaN(f.getTime())) return true;
       
-      <td class="texto-corto" ondblclick="mostrarModal('Operador', '${aTexto(valorOp).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorOp, 15)}</td>
-      <td class="texto-corto" ondblclick="mostrarModal('Fecha de Registro', '${aTexto(valorFechaReg).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorFechaReg, 15)}</td>
-      
-      <td>
-        <select class="campo-editar" data-tarea="${tareaLimpia}" ${esGestionado ? 'disabled' : ''}>
-          <option value="">-- Seleccionar --</option>
-          ${listas.observaciones.map(obs => 
-            `<option value="${obs}" ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
-          ).join('')}
-        </select>
-      </td>
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
 
-      <td style="text-align: center;">
-        <input type="checkbox" class="chk-tarea" data-tarea="${tareaLimpia}" ${esGestionado ? 'disabled checked' : ''}>
-      </td>
-    `;
-    cuerpo.appendChild(fila);
-  });
-}
-async function guardarSeleccionados() {
-  const seleccionados = document.querySelectorAll('.chk-tarea:checked:not(:disabled)');
-  if (seleccionados.length === 0) {
-    return alert('Selecciona al menos una tarea pendiente para guardar.');
-  }
+      const ayer = new Date(hoy);
+      ayer.setDate(ayer.getDate() - 1);
 
-  const listaPayload = [];
-  const hoy = new Date();
-  const fechaFormateada = hoy.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
-
-  for (let chk of seleccionados) {
-    const tarea = chk.dataset.tarea;
-    const selectObs = document.querySelector(`select[data-tarea="${tarea}"]`);
-    const observacion = selectObs ? selectObs.value : '';
-
-    if (!observacion) {
-      alert(`La tarea "${tarea}" fue seleccionada pero no tiene una observación asignada.`);
-      return;
+      const fechaComparable = new Date(f.getFullYear(), f.getMonth(), f.getDate());
+      return fechaComparable.getTime() >= ayer.getTime();
     }
 
-    listaPayload.push({
-      tarea,
-      operador: usuarioLogeado,
-      observacion,
-      fechaRegistro: fechaFormateada
-    });
-  }
+    function renderizarTablas() {
+      const recientes = todosLosDatos.filter(d => esHoyOAyer(d['FECHA DE PROGRAMACIÓN'] || d['Fecha de Registro']));
+      const antiguos = todosLosDatos.filter(d => !esHoyOAyer(d['FECHA DE PROGRAMACIÓN'] || d['Fecha de Registro']));
 
-  // --- BLOQUEO Y EFECTO VISUAL ---
-  const btnGuardar = document.getElementById('btnGuardarSeleccionados');
-  if (btnGuardar) {
-    btnGuardar.disabled = true;
-    btnGuardar.style.opacity = '0.5';
-    btnGuardar.style.cursor = 'not-allowed';
-  }
+      const recientesLimitados = recientes.slice(0, 200);
 
-  try {
-    const res = await fetch(`${URL_BACKEND}/api/editar`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(listaPayload)
-    });
-
-    const data = await res.json();
-    alert(`✅ ${data.mensaje}`);
-    cargarDatos();
-  } catch (error) {
-    alert('Error al guardar los registros.');
-  } finally {
-    // --- DESBLOQUEO TRAS FINALIZAR ---
-    if (btnGuardar) {
-      btnGuardar.disabled = false;
-      btnGuardar.style.opacity = '1';
-      btnGuardar.style.cursor = 'pointer';
-    }
-  }
-
-
-      const res = await fetch(`${URL_BACKEND}/api/editar`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(listaPayload)
+      let pendientes = recientesLimitados.filter(d => {
+        const obs = (d.Observacion || '').toString().trim().toLowerCase();
+        return !obs || obs === 'pendiente' || obs === '-- seleccionar --';
       });
 
-      const data = await res.json();
-      alert(`✅ ${data.mensaje}`);
-      cargarDatos();
+      let gestionados = recientesLimitados.filter(d => {
+        const obs = (d.Observacion || '').toString().trim().toLowerCase();
+        return obs && obs !== 'pendiente' && obs !== '-- seleccionar --';
+      });
+
+      document.getElementById('countPendientes').textContent = pendientes.length;
+      document.getElementById('countGestionados').textContent = gestionados.length;
+      document.getElementById('countAntiguos').textContent = antiguos.length;
+
+      pendientes = aplicarFiltroArray(pendientes, filtrosPendientes);
+      gestionados = aplicarFiltroArray(gestionados, filtrosGestionados);
+      const antiguosFiltrados = aplicarFiltroArray(antiguos, filtrosAntiguos);
+
+      renderizarCuerpo('cuerpoTablaPendientes', pendientes, false);
+      renderizarCuerpo('cuerpoTablaGestionados', gestionados, true);
+      renderizarCuerpo('cuerpoTablaAntiguos', antiguosFiltrados, true);
+    }
+
+    function renderizarCuerpo(idCuerpo, datos, esGestionado) {
+      const cuerpo = document.getElementById(idCuerpo);
+      cuerpo.innerHTML = '';
+
+      datos.forEach(d => {
+        const obsLimpia = (d.Observacion || '').toString().trim();
+        const esPendiente = !obsLimpia || obsLimpia.toLowerCase() === 'pendiente';
+
+        const valorObs = esPendiente ? '' : obsLimpia;
+        const valorOp = d.Operador || '';
+        const valorFechaReg = d['Fecha de Registro'] || '';
+
+        const fila = document.createElement('tr');
+        const etiquetaNuevo = d.NuevoRegistro ? '<span class="nuevo-registro">Nuevo registro</span>' : '';
+        const tareaLimpia = aTexto(d.TAREA).replace(/'/g, "\\'");
+
+        fila.innerHTML = `
+          <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${tareaLimpia}')" title="Doble clic para ver completo">
+            ${truncarTexto(d.TAREA, 12)} ${etiquetaNuevo}
+          </td>
+          <td class="texto-corto" ondblclick="mostrarModal('Orden', '${aTexto(d.ORDEN).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.ORDEN, 12)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Ciudad', '${aTexto(d.CIUDAD).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CIUDAD, 18)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Técnico', '${aTexto(d.TECNICO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.TECNICO, 15)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Contrato', '${aTexto(d.CONTRATO).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${aTexto(d.CONTRATO)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Cliente', '${aTexto(d.CLIENTE).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d.CLIENTE, 18)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Fecha de Programación', '${aTexto(d['FECHA DE PROGRAMACIÓN']).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(d['FECHA DE PROGRAMACIÓN'], 16)}</td>
+          
+          <td class="texto-corto" ondblclick="mostrarModal('Operador', '${aTexto(valorOp).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorOp, 15)}</td>
+          <td class="texto-corto" ondblclick="mostrarModal('Fecha de Registro', '${aTexto(valorFechaReg).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorFechaReg, 15)}</td>
+          
+          <td>
+            <select class="campo-editar" data-tarea="${tareaLimpia}" ${esGestionado ? 'disabled' : ''}>
+              <option value="">-- Seleccionar --</option>
+              ${listas.observaciones.map(obs => 
+                `<option value="${obs}" ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
+              ).join('')}
+            </select>
+          </td>
+
+          <td style="text-align: center;">
+            <input type="checkbox" class="chk-tarea" data-tarea="${tareaLimpia}" ${esGestionado ? 'disabled checked' : ''}>
+          </td>
+        `;
+        cuerpo.appendChild(fila);
+      });
+    }
+
+    async function guardarSeleccionados() {
+      const seleccionados = document.querySelectorAll('#cuerpoTablaPendientes .chk-tarea:checked:not(:disabled)');
+      if (seleccionados.length === 0) {
+        return alert('Selecciona al menos una tarea pendiente para guardar.');
+      }
+
+      const listaPayload = [];
+      const hoy = new Date();
+      const fechaFormateada = hoy.toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' });
+
+      for (let chk of seleccionados) {
+        const tarea = chk.dataset.tarea;
+        const selectObs = document.querySelector(`select[data-tarea="${tarea}"]`);
+        const observacion = selectObs ? selectObs.value : '';
+
+        if (!observacion) {
+          alert(`La tarea "${tarea}" fue seleccionada pero no tiene una observación asignada.`);
+          return;
+        }
+
+        listaPayload.push({
+          tarea,
+          operador: usuarioLogeado,
+          observacion,
+          fechaRegistro: fechaFormateada
+        });
+      }
+
+      const btnGuardar = document.getElementById('btnGuardarSeleccionados');
+      if (btnGuardar) {
+        btnGuardar.disabled = true;
+        btnGuardar.style.opacity = '0.5';
+        btnGuardar.style.cursor = 'not-allowed';
+      }
+
+      try {
+        const res = await fetch(`${URL_BACKEND}/api/editar`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(listaPayload)
+        });
+
+        const data = await res.json();
+        alert(`✅ ${data.mensaje}`);
+        cargarDatos();
+      } catch (error) {
+        alert('Error al guardar los registros.');
+      } finally {
+        if (btnGuardar) {
+          btnGuardar.disabled = false;
+          btnGuardar.style.opacity = '1';
+          btnGuardar.style.cursor = 'pointer';
+        }
+      }
     }
 
     function truncarTexto(texto, maxCaracteres = 25) {
