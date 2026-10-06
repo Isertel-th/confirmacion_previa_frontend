@@ -37,7 +37,8 @@
     <div class="tabs-menu">
       <button class="tab-btn activo" id="btnTabPendientes" onclick="cambiarTab('pendientes')">⏳ Pendientes Hoy/Ayer (<span id="countPendientes">0</span>)</button>
       <button class="tab-btn" id="btnTabGestionados" onclick="cambiarTab('gestionados')">✅ Gestionadas Hoy/Ayer (<span id="countGestionados">0</span>)</button>
-      <button class="tab-btn" id="btnTabAntiguos" onclick="cambiarTab('antiguos')">📦 Antiguos (<span id="countAntiguos">0</span>)</button>
+      <button class="tab-btn" id="btnTabAntiguosPendientes" onclick="cambiarTab('antiguosPendientes')">📦 Antiguos Pendientes (<span id="countAntiguosPendientes">0</span>)</button>
+      <button class="tab-btn" id="btnTabAntiguosGestionados" onclick="cambiarTab('antiguosGestionados')">📂 Antiguos Gestionados (<span id="countAntiguosGestionados">0</span>)</button>
     </div>
 
     <!-- PESTAÑA PENDIENTES -->
@@ -69,8 +70,8 @@
       </div>
     </div>
 
-    <!-- PESTAÑA ANTIGUOS -->
-    <div id="tabAntiguos" class="tab-contenido">
+    <!-- PESTAÑA ANTIGUOS PENDIENTES -->
+    <div id="tabAntiguosPendientes" class="tab-contenido">
       <div style="margin-bottom: 10px;">
         <button id="btnGuardarAntiguos" onclick="guardarSeleccionados()" style="background:#2e7d32; font-weight:bold;">
           💾 Guardar Seleccionados como Gestionado
@@ -79,9 +80,21 @@
       <div class="tabla-contenedor">
         <table>
           <thead>
-            <tr id="encabezadoAntiguos"></tr>
+            <tr id="encabezadoAntiguosPendientes"></tr>
           </thead>
-          <tbody id="cuerpoTablaAntiguos"></tbody>
+          <tbody id="cuerpoTablaAntiguosPendientes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PESTAÑA ANTIGUOS GESTIONADOS -->
+    <div id="tabAntiguosGestionados" class="tab-contenido">
+      <div class="tabla-contenedor">
+        <table>
+          <thead>
+            <tr id="encabezadoAntiguosGestionados"></tr>
+          </thead>
+          <tbody id="cuerpoTablaAntiguosGestionados"></tbody>
         </table>
       </div>
     </div>
@@ -94,7 +107,8 @@
     let listas = { observaciones: [] };
     let filtrosPendientes = {};
     let filtrosGestionados = {};
-    let filtrosAntiguos = {};
+    let filtrosAntiguosPendientes = {};
+    let filtrosAntiguosGestionados = {};
 
     const columnas = [
       { clave: 'TAREA', nombre: 'TAREA' },
@@ -124,7 +138,8 @@
 
         generarEncabezados('encabezadoPendientes', 'pendientes');
         generarEncabezados('encabezadoGestionados', 'gestionados');
-        generarEncabezados('encabezadoAntiguos', 'antiguos');
+        generarEncabezados('encabezadoAntiguosPendientes', 'antiguosPendientes');
+        generarEncabezados('encabezadoAntiguosGestionados', 'antiguosGestionados');
         renderizarTablas();
       } catch (e) {
         console.error('Error al cargar datos:', e);
@@ -141,9 +156,12 @@
       } else if (tab === 'gestionados') {
         document.getElementById('btnTabGestionados').classList.add('activo');
         document.getElementById('tabGestionados').classList.add('activo');
+      } else if (tab === 'antiguosPendientes') {
+        document.getElementById('btnTabAntiguosPendientes').classList.add('activo');
+        document.getElementById('tabAntiguosPendientes').classList.add('activo');
       } else {
-        document.getElementById('btnTabAntiguos').classList.add('activo');
-        document.getElementById('tabAntiguos').classList.add('activo');
+        document.getElementById('btnTabAntiguosGestionados').classList.add('activo');
+        document.getElementById('tabAntiguosGestionados').classList.add('activo');
       }
     }
 
@@ -154,7 +172,7 @@
       columnas.forEach(col => {
         const th = document.createElement('th');
         if (col.clave === 'ACCION') {
-          if (tipo === 'pendientes' || tipo === 'antiguos') {
+          if (tipo === 'pendientes' || tipo === 'antiguosPendientes') {
             th.innerHTML = `<input type="checkbox" onchange="toggleSeleccionarTodos(this, '${tipo}')">`;
           } else {
             th.textContent = '✓';
@@ -171,7 +189,7 @@
     }
 
     function toggleSeleccionarTodos(chkMaster, tipo) {
-      const idCuerpo = tipo === 'pendientes' ? '#cuerpoTablaPendientes' : '#cuerpoTablaAntiguos';
+      const idCuerpo = tipo === 'pendientes' ? '#cuerpoTablaPendientes' : '#cuerpoTablaAntiguosPendientes';
       document.querySelectorAll(`${idCuerpo} .chk-tarea:not(:disabled)`).forEach(chk => {
         chk.checked = chkMaster.checked;
       });
@@ -187,8 +205,10 @@
         filtrosPendientes[clave] = valor;
       } else if (tipo === 'gestionados') {
         filtrosGestionados[clave] = valor;
+      } else if (tipo === 'antiguosPendientes') {
+        filtrosAntiguosPendientes[clave] = valor;
       } else {
-        filtrosAntiguos[clave] = valor;
+        filtrosAntiguosGestionados[clave] = valor;
       }
       renderizarTablas();
     }
@@ -217,34 +237,37 @@
       return fechaComparable.getTime() >= ayer.getTime();
     }
 
+    function esGestado(d) {
+      const obs = (d.Observacion || '').toString().trim().toLowerCase();
+      return obs && obs !== 'pendiente' && obs !== '-- seleccionar --';
+    }
+
     function renderizarTablas() {
       const recientes = todosLosDatos.filter(d => esHoyOAyer(d['FECHA DE PROGRAMACIÓN'] || d['Fecha de Registro']));
       const antiguos = todosLosDatos.filter(d => !esHoyOAyer(d['FECHA DE PROGRAMACIÓN'] || d['Fecha de Registro']));
 
       const recientesLimitados = recientes.slice(0, 200);
 
-      let pendientes = recientesLimitados.filter(d => {
-        const obs = (d.Observacion || '').toString().trim().toLowerCase();
-        return !obs || obs === 'pendiente' || obs === '-- seleccionar --';
-      });
+      let pendientes = recientesLimitados.filter(d => !esGestado(d));
+      let gestionados = recientesLimitados.filter(d => esGestado(d));
 
-      let gestionados = recientesLimitados.filter(d => {
-        const obs = (d.Observacion || '').toString().trim().toLowerCase();
-        return obs && obs !== 'pendiente' && obs !== '-- seleccionar --';
-      });
+      let antiguosPendientes = antiguos.filter(d => !esGestado(d));
+      let antiguosGestionados = antiguos.filter(d => esGestado(d));
 
       document.getElementById('countPendientes').textContent = pendientes.length;
       document.getElementById('countGestionados').textContent = gestionados.length;
-      document.getElementById('countAntiguos').textContent = antiguos.length;
+      document.getElementById('countAntiguosPendientes').textContent = antiguosPendientes.length;
+      document.getElementById('countAntiguosGestionados').textContent = antiguosGestionados.length;
 
       pendientes = aplicarFiltroArray(pendientes, filtrosPendientes);
       gestionados = aplicarFiltroArray(gestionados, filtrosGestionados);
-      const antiguosFiltrados = aplicarFiltroArray(antiguos, filtrosAntiguos);
+      antiguosPendientes = aplicarFiltroArray(antiguosPendientes, filtrosAntiguosPendientes);
+      antiguosGestionados = aplicarFiltroArray(antiguosGestionados, filtrosAntiguosGestionados);
 
       renderizarCuerpo('cuerpoTablaPendientes', pendientes, false);
       renderizarCuerpo('cuerpoTablaGestionados', gestionados, true);
-      // Permitimos gestionar los registros en la pestaña antiguos
-      renderizarCuerpo('cuerpoTablaAntiguos', antiguosFiltrados, false);
+      renderizarCuerpo('cuerpoTablaAntiguosPendientes', antiguosPendientes, false);
+      renderizarCuerpo('cuerpoTablaAntiguosGestionados', antiguosGestionados, true);
     }
 
     function renderizarCuerpo(idCuerpo, datos, esGestionado) {
@@ -263,7 +286,7 @@
         const etiquetaNuevo = d.NuevoRegistro ? '<span class="nuevo-registro">Nuevo registro</span>' : '';
         const tareaLimpia = aTexto(d.TAREA).replace(/'/g, "\\'");
 
-        const estaHabilitado = !esGestionado || esPendiente;
+        const estaHabilitado = !esGestionado;
 
         fila.innerHTML = `
           <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${tareaLimpia}')" title="Doble clic para ver completo">
