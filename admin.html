@@ -83,6 +83,11 @@
 
     <!-- PESTAÑA ANTIGUOS -->
     <div id="tabAntiguos" class="tab-contenido">
+      <div style="margin-bottom: 10px;">
+        <button id="btnGuardarAntiguos" onclick="guardarSeleccionados()" style="background:#2e7d32; font-weight:bold;">
+          💾 Guardar Seleccionados como Gestionado
+        </button>
+      </div>
       <div class="tabla-contenedor">
         <table>
           <thead>
@@ -159,8 +164,8 @@
       columnas.forEach(col => {
         const th = document.createElement('th');
         if (col.clave === 'ACCION') {
-          if (tipo === 'pendientes') {
-            th.innerHTML = `<input type="checkbox" id="chkSeleccionarTodos" onchange="toggleSeleccionarTodos(this)">`;
+          if (tipo === 'pendientes' || tipo === 'antiguos') {
+            th.innerHTML = `<input type="checkbox" onchange="toggleSeleccionarTodos(this, '${tipo}')">`;
           } else {
             th.textContent = '✓';
           }
@@ -175,8 +180,9 @@
       });
     }
 
-    function toggleSeleccionarTodos(chkMaster) {
-      document.querySelectorAll('#cuerpoTablaPendientes .chk-tarea:not(:disabled)').forEach(chk => {
+    function toggleSeleccionarTodos(chkMaster, tipo) {
+      const idCuerpo = tipo === 'pendientes' ? '#cuerpoTablaPendientes' : '#cuerpoTablaAntiguos';
+      document.querySelectorAll(`${idCuerpo} .chk-tarea:not(:disabled)`).forEach(chk => {
         chk.checked = chkMaster.checked;
       });
     }
@@ -206,11 +212,10 @@
       });
     }
 
-    // Comprueba si una cadena de fecha pertenece a hoy o a ayer
     function esHoyOAyer(fechaStr) {
       if (!fechaStr) return false;
       const f = new Date(fechaStr);
-      if (isNaN(f.getTime())) return true; // Si no tiene fecha válida, se mantiene en recientes por precaución
+      if (isNaN(f.getTime())) return true;
       
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
@@ -223,11 +228,9 @@
     }
 
     function renderizarTablas() {
-      // Separar por Recientes (hoy/ayer) y Antiguos
       const recientes = todosLosDatos.filter(d => esHoyOAyer(d['FECHA DE PROGRAMACIÓN'] || d['Fecha de Registro']));
       const antiguos = todosLosDatos.filter(d => !esHoyOAyer(d['FECHA DE PROGRAMACIÓN'] || d['Fecha de Registro']));
 
-      // Limite de 200 para recientes
       const recientesLimitados = recientes.slice(0, 200);
 
       let pendientes = recientesLimitados.filter(d => {
@@ -250,7 +253,8 @@
 
       renderizarCuerpo('cuerpoTablaPendientes', pendientes, false);
       renderizarCuerpo('cuerpoTablaGestionados', gestionados, true);
-      renderizarCuerpo('cuerpoTablaAntiguos', antiguosFiltrados, true);
+      // Permitimos gestionar también los registros antiguos
+      renderizarCuerpo('cuerpoTablaAntiguos', antiguosFiltrados, false);
     }
 
     function renderizarCuerpo(idCuerpo, datos, esGestionado) {
@@ -269,6 +273,8 @@
         const etiquetaNuevo = d.NuevoRegistro ? '<span class="nuevo-registro">Nuevo registro</span>' : '';
         const tareaLimpia = aTexto(d.TAREA).replace(/'/g, "\\'");
 
+        const estaHabilitado = !esGestionado || esPendiente;
+
         fila.innerHTML = `
           <td class="texto-corto" ondblclick="mostrarModal('Tarea', '${tareaLimpia}')" title="Doble clic para ver completo">
             ${truncarTexto(d.TAREA, 12)} ${etiquetaNuevo}
@@ -284,7 +290,7 @@
           <td class="texto-corto" ondblclick="mostrarModal('Fecha de Registro', '${aTexto(valorFechaReg).replace(/'/g, "\\'")}')" title="Doble clic para ver completo">${truncarTexto(valorFechaReg, 15)}</td>
           
           <td>
-            <select class="campo-editar" data-tarea="${tareaLimpia}" ${esGestionado ? 'disabled' : ''}>
+            <select class="campo-editar" data-tarea="${tareaLimpia}" ${estaHabilitado ? '' : 'disabled'}>
               <option value="">-- Seleccionar --</option>
               ${listas.observaciones.map(obs => 
                 `<option value="${obs}" ${valorObs === obs ? 'selected' : ''}>${obs}</option>`
@@ -293,7 +299,7 @@
           </td>
 
           <td style="text-align: center;">
-            <input type="checkbox" class="chk-tarea" data-tarea="${tareaLimpia}" ${esGestionado ? 'disabled checked' : ''}>
+            <input type="checkbox" class="chk-tarea" data-tarea="${tareaLimpia}" ${estaHabilitado ? '' : 'disabled checked'}>
           </td>
         `;
         cuerpo.appendChild(fila);
@@ -301,9 +307,9 @@
     }
 
     async function guardarSeleccionados() {
-      const seleccionados = document.querySelectorAll('#cuerpoTablaPendientes .chk-tarea:checked:not(:disabled)');
+      const seleccionados = document.querySelectorAll('.chk-tarea:checked:not(:disabled)');
       if (seleccionados.length === 0) {
-        return alert('Selecciona al menos una tarea pendiente para guardar.');
+        return alert('Selecciona al menos una tarea para guardar.');
       }
 
       const listaPayload = [];
@@ -328,12 +334,14 @@
         });
       }
 
-      const btnGuardar = document.getElementById('btnGuardarSeleccionados');
-      if (btnGuardar) {
-        btnGuardar.disabled = true;
-        btnGuardar.style.opacity = '0.5';
-        btnGuardar.style.cursor = 'not-allowed';
-      }
+      const botonesGuardar = [document.getElementById('btnGuardarSeleccionados'), document.getElementById('btnGuardarAntiguos')];
+      botonesGuardar.forEach(btn => {
+        if (btn) {
+          btn.disabled = true;
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+        }
+      });
 
       try {
         const res = await fetch(`${URL_BACKEND}/api/editar`, {
@@ -348,11 +356,13 @@
       } catch (error) {
         alert('Error al guardar los registros.');
       } finally {
-        if (btnGuardar) {
-          btnGuardar.disabled = false;
-          btnGuardar.style.opacity = '1';
-          btnGuardar.style.cursor = 'pointer';
-        }
+        botonesGuardar.forEach(btn => {
+          if (btn) {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+          }
+        });
       }
     }
 
