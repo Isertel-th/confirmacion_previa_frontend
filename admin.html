@@ -47,13 +47,13 @@
 
     <!-- MENÚ DE PESTAÑAS -->
     <div class="tabs-menu">
-      <button class="tab-btn activo" id="btnTabPendientes" onclick="cambiarTab('pendientes')">⏳ Pendientes Hoy (<span id="countPendientes">0</span>)</button>
-      <button class="tab-btn" id="btnTabGestionados" onclick="cambiarTab('gestionados')">✅ Gestionadas Hoy (<span id="countGestionados">0</span>)</button>
-      <button class="tab-btn" id="btnTabAntiguosPendientes" onclick="cambiarTab('antiguosPendientes')">📦 Antiguos Pendientes (<span id="countAntiguosPendientes">0</span>)</button>
-      <button class="tab-btn" id="btnTabAntiguosGestionados" onclick="cambiarTab('antiguosGestionados')">📂 Antiguos Gestionados (<span id="countAntiguosGestionados">0</span>)</button>
+      <button class="tab-btn activo" id="btnTabPendientes" onclick="cambiarTab('pendientes')">⏳ Pendientes Mañana (<span id="countPendientes">0</span>)</button>
+      <button class="tab-btn" id="btnTabGestionados" onclick="cambiarTab('gestionados')">✅ Gestionadas Mañana (<span id="countGestionados">0</span>)</button>
+      <button class="tab-btn" id="btnTabAntiguosPendientes" onclick="cambiarTab('antiguosPendientes')">📦 Antiguos / Hoy Pendientes (<span id="countAntiguosPendientes">0</span>)</button>
+      <button class="tab-btn" id="btnTabAntiguosGestionados" onclick="cambiarTab('antiguosGestionados')">📂 Antiguos / Hoy Gestionados (<span id="countAntiguosGestionados">0</span>)</button>
     </div>
 
-    <!-- PESTAÑA PENDIENTES HOY -->
+    <!-- PESTAÑA PENDIENTES MAÑANA -->
     <div id="tabPendientes" class="tab-contenido activo">
       <div style="margin-bottom: 10px;">
         <button id="btnGuardarSeleccionados" onclick="guardarSeleccionados()" style="background:#2e7d32; font-weight:bold;">
@@ -70,7 +70,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA GESTIONADOS HOY -->
+    <!-- PESTAÑA GESTIONADOS MAÑANA -->
     <div id="tabGestionados" class="tab-contenido">
       <div class="tabla-contenedor">
         <table>
@@ -82,7 +82,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA ANTIGUOS PENDIENTES -->
+    <!-- PESTAÑA ANTIGUOS / HOY PENDIENTES -->
     <div id="tabAntiguosPendientes" class="tab-contenido">
       <div style="margin-bottom: 10px;">
         <button id="btnGuardarAntiguos" onclick="guardarSeleccionados()" style="background:#2e7d32; font-weight:bold;">
@@ -99,7 +99,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA ANTIGUOS GESTIONADOS -->
+    <!-- PESTAÑA ANTIGUOS / HOY GESTIONADOS -->
     <div id="tabAntiguosGestionados" class="tab-contenido">
       <div class="tabla-contenedor">
         <table>
@@ -232,18 +232,35 @@
       });
     }
 
-    function esFechaHoy(fechaStr) {
+    function esMismaFecha(f1, f2) {
+      return (
+        f1.getFullYear() === f2.getFullYear() &&
+        f1.getMonth() === f2.getMonth() &&
+        f1.getDate() === f2.getDate()
+      );
+    }
+
+    function esFechaManana(fechaStr) {
+      if (!fechaStr) return false;
+      const f = new Date(fechaStr);
+      if (isNaN(f.getTime())) return false;
+
+      const manana = new Date();
+      manana.setDate(manana.getDate() + 1);
+
+      return esMismaFecha(f, manana);
+    }
+
+    function esFechaHoyOAnterior(fechaStr) {
       if (!fechaStr) return false;
       const f = new Date(fechaStr);
       if (isNaN(f.getTime())) return false;
 
       const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      f.setHours(0, 0, 0, 0);
 
-      return (
-        f.getFullYear() === hoy.getFullYear() &&
-        f.getMonth() === hoy.getMonth() &&
-        f.getDate() === hoy.getDate()
-      );
+      return f <= hoy;
     }
 
     function esGestado(d) {
@@ -252,11 +269,11 @@
     }
 
     function renderizarTablas() {
-      const hoy = todosLosDatos.filter(d => esFechaHoy(d['FECHA DE PROGRAMACIÓN']));
-      const antiguos = todosLosDatos.filter(d => !esFechaHoy(d['FECHA DE PROGRAMACIÓN']));
+      const presente = todosLosDatos.filter(d => esFechaManana(d['FECHA DE PROGRAMACIÓN']));
+      const antiguos = todosLosDatos.filter(d => esFechaHoyOAnterior(d['FECHA DE PROGRAMACIÓN']));
 
-      let pendientes = hoy.filter(d => !esGestado(d));
-      let gestionados = hoy.filter(d => esGestado(d));
+      let pendientes = presente.filter(d => !esGestado(d));
+      let gestionados = presente.filter(d => esGestado(d));
 
       let antiguosPendientes = antiguos.filter(d => !esGestado(d));
       let antiguosGestionados = antiguos.filter(d => esGestado(d));
