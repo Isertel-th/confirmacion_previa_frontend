@@ -222,6 +222,32 @@
       });
     }
 
+function parsearFecha(fechaStr) {
+      if (!fechaStr) return null;
+      if (fechaStr instanceof Date) return fechaStr;
+
+      const str = String(fechaStr).trim();
+
+      // Si viene en formato YYYY-MM-DD o YYYY/MM/DD
+      if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(str)) {
+        const f = new Date(str);
+        return isNaN(f.getTime()) ? null : f;
+      }
+
+      // Si viene en formato DD/MM/YYYY o DD-MM-YYYY (Formato latino de Excel)
+      const partes = str.split(/[-/]/);
+      if (partes.length === 3) {
+        const dia = parseInt(partes[0], 10);
+        const mes = parseInt(partes[1], 10) - 1;
+        const anio = parseInt(partes[2], 10);
+        const f = new Date(anio, mes, dia);
+        return isNaN(f.getTime()) ? null : f;
+      }
+
+      const f = new Date(str);
+      return isNaN(f.getTime()) ? null : f;
+    }
+
     function esMismaFecha(f1, f2) {
       return (
         f1.getFullYear() === f2.getFullYear() &&
@@ -232,8 +258,8 @@
 
     function esFechaManana(fechaStr) {
       if (!fechaStr) return false;
-      const f = new Date(fechaStr);
-      if (isNaN(f.getTime())) return false;
+      const f = parsearFecha(fechaStr);
+      if (!f || isNaN(f.getTime())) return false;
 
       const manana = new Date();
       manana.setDate(manana.getDate() + 1);
@@ -243,8 +269,8 @@
 
     function esFechaHoyOAnterior(fechaStr) {
       if (!fechaStr) return false;
-      const f = new Date(fechaStr);
-      if (isNaN(f.getTime())) return false;
+      const f = parsearFecha(fechaStr);
+      if (!f || isNaN(f.getTime())) return false;
 
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
