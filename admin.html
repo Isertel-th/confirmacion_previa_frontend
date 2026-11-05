@@ -240,46 +240,21 @@
       );
     }
 
-function parsearFechaLocal(fechaStr) {
-      if (!fechaStr) return null;
-      // Soporta formatos tipo "6/11/2026 8:00" o "2026-11-06"
-      const partes = String(fechaStr).split(/[\/\s-]/);
-      if (partes.length >= 3) {
-        // Detectar si viene como DD/MM/YYYY o YYYY/MM/DD
-        let anio, mes, dia;
-        if (partes[0].length === 4) {
-          anio = parseInt(partes[0]);
-          mes = parseInt(partes[1]) - 1;
-          dia = parseInt(partes[2]);
-        } else {
-          dia = parseInt(partes[0]);
-          mes = parseInt(partes[1]) - 1;
-          anio = parseInt(partes[2]);
-        }
-        const d = new Date(anio, mes, dia);
-        if (!isNaN(d.getTime())) return d;
-      }
-      const f = new Date(fechaStr);
-      return isNaN(f.getTime()) ? null : f;
-    }
-
     function esFechaManana(fechaStr) {
-      const f = parsearFechaLocal(fechaStr);
-      if (!f) return false;
+      if (!fechaStr) return false;
+      const f = new Date(fechaStr);
+      if (isNaN(f.getTime())) return false;
 
       const manana = new Date();
       manana.setDate(manana.getDate() + 1);
 
-      return (
-        f.getFullYear() === manana.getFullYear() &&
-        f.getMonth() === manana.getMonth() &&
-        f.getDate() === manana.getDate()
-      );
+      return esMismaFecha(f, manana);
     }
 
     function esFechaHoyOAnterior(fechaStr) {
-      const f = parsearFechaLocal(fechaStr);
-      if (!f) return false;
+      if (!fechaStr) return false;
+      const f = new Date(fechaStr);
+      if (isNaN(f.getTime())) return false;
 
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
