@@ -284,15 +284,47 @@ function parsearFecha(fechaStr) {
       return obs && obs !== 'pendiente' && obs !== '-- seleccionar --';
     }
 
+    // Función para eliminar duplicados visuales por TAREA y asegurar que actúen como una sola
+    function depurarTareasUnicas(listaDatos) {
+      const mapaUnicos = new Map();
+      
+      listaDatos.forEach(d => {
+        const idTarea = String(d.TAREA || '').trim();
+        if (!idTarea) return;
+
+        // Si ya existe la tarea, priorizamos mostrar la que tenga una observación gestionada o la más reciente
+        if (!mapaUnicos.has(idTarea)) {
+          mapaUnicos.set(idTarea, d);
+        } else {
+          const existente = mapaUnicos.get(idTarea);
+          const estaGestionadoNuevo = d.Observacion && d.Observacion.toLowerCase() !== 'pendiente' && d.Observacion.toLowerCase() !== '-- seleccionar --';
+          const estaGestionadoExistente = existente.Observacion && existente.Observacion.toLowerCase() !== 'pendiente' && existente.Observacion.toLowerCase() !== '-- seleccionar --';
+          
+          // Si el nuevo está gestionado y el anterior no, reemplazamos para que refleje el estado correcto
+          if (estaGestionadoNuevo && !estaGestionadoExistente) {
+            mapaUnicos.set(idTarea, d);
+          }
+        }
+      });
+
+      return Array.from(mapaUnicos.values());
+    }
+
     function renderizarTablas() {
       const presente = todosLosDatos.filter(d => esFechaManana(d['FECHA DE PROGRAMACIÓN']));
       const antiguos = todosLosDatos.filter(d => esFechaHoyOAnterior(d['FECHA DE PROGRAMACIÓN']));
 
-      let pendientes = presente.filter(d => !esGestado(d));
-      let gestionados = presente.filter(d => esGestado(d));
+      // Aplicamos depuración de duplicados para limpiar el desorden visual
+      let pendientesCrudos = presente.filter(d => !esGestado(d));
+      let gestionadosCrudos = presente.filter(d => esGestado(d));
 
-      let antiguosPendientes = antiguos.filter(d => !esGestado(d));
-      let antiguosGestionados = antiguos.filter(d => esGestado(d));
+      let antiguosPendientesCrudos = antiguos.filter(d => !esGestado(d));
+      let antiguosGestionadosCrudos = antiguos.filter(d => esGestado(d));
+
+      let pendientes = depurarTareasUnicas(pendientesCrudos);
+      let gestionados = depurarTareasUnicas(gestionadosCrudos);
+      let antiguosPendientes = depurarTareasUnicas(antiguosPendientesCrudos);
+      let antiguosGestionados = depurarTareasUnicas(antiguosGestionadosCrudos);
 
       document.getElementById('countPendientes').textContent = pendientes.length;
       document.getElementById('countGestionados').textContent = gestionados.length;
