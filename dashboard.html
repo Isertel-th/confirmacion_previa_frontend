@@ -222,30 +222,46 @@
       });
     }
 
-function parsearFecha(fechaStr) {
+    function parsearFecha(fechaStr) {
       if (!fechaStr) return null;
-      if (fechaStr instanceof Date) return fechaStr;
+      if (fechaStr instanceof Date) {
+        fechaStr.setHours(0, 0, 0, 0);
+        return fechaStr;
+      }
 
       const str = String(fechaStr).trim();
+      // Ignorar completamente cualquier hora separando por espacio (ej: "11/11/26 16:00" -> "11/11/26")
+      const soloFecha = str.split(' ')[0];
+
+      let f = null;
 
       // Si viene en formato YYYY-MM-DD o YYYY/MM/DD
-      if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(str)) {
-        const f = new Date(str);
-        return isNaN(f.getTime()) ? null : f;
+      if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(soloFecha)) {
+        f = new Date(soloFecha);
+      } else {
+        // Si viene en formato DD/MM/YYYY o DD/MM/YY (Formato latino de Excel)
+        const partes = soloFecha.split(/[-/]/);
+        if (partes.length === 3) {
+          const dia = parseInt(partes[0], 10);
+          const mes = parseInt(partes[1], 10) - 1;
+          let anio = parseInt(partes[2], 10);
+
+          // Convertir años de 2 dígitos (ej: 26) a 4 dígitos (2026)
+          if (anio < 100) {
+            anio += 2000;
+          }
+
+          f = new Date(anio, mes, dia);
+        } else {
+          f = new Date(soloFecha);
+        }
       }
 
-      // Si viene en formato DD/MM/YYYY o DD-MM-YYYY (Formato latino de Excel)
-      const partes = str.split(/[-/]/);
-      if (partes.length === 3) {
-        const dia = parseInt(partes[0], 10);
-        const mes = parseInt(partes[1], 10) - 1;
-        const anio = parseInt(partes[2], 10);
-        const f = new Date(anio, mes, dia);
-        return isNaN(f.getTime()) ? null : f;
-      }
+      if (!f || isNaN(f.getTime())) return null;
 
-      const f = new Date(str);
-      return isNaN(f.getTime()) ? null : f;
+      // Forzar siempre hora 00:00:00 para ignorar el tiempo completamente
+      f.setHours(0, 0, 0, 0);
+      return f;
     }
 
     function esMismaFecha(f1, f2) {
@@ -263,6 +279,7 @@ function parsearFecha(fechaStr) {
 
       const manana = new Date();
       manana.setDate(manana.getDate() + 1);
+      manana.setHours(0, 0, 0, 0);
 
       return esMismaFecha(f, manana);
     }
@@ -274,7 +291,6 @@ function parsearFecha(fechaStr) {
 
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
-      f.setHours(0, 0, 0, 0);
 
       return f <= hoy;
     }
@@ -284,7 +300,6 @@ function parsearFecha(fechaStr) {
       return obs && obs !== 'pendiente' && obs !== '-- seleccionar --';
     }
 
-    // Función para eliminar duplicados visuales por TAREA y asegurar que actúen como una sola
     function depurarTareasUnicas(listaDatos) {
       const mapaUnicos = new Map();
       
@@ -292,7 +307,6 @@ function parsearFecha(fechaStr) {
         const idTarea = String(d.TAREA || '').trim();
         if (!idTarea) return;
 
-        // Si ya existe la tarea, priorizamos mostrar la que tenga una observación gestionada o la más reciente
         if (!mapaUnicos.has(idTarea)) {
           mapaUnicos.set(idTarea, d);
         } else {
@@ -300,7 +314,6 @@ function parsearFecha(fechaStr) {
           const estaGestionadoNuevo = d.Observacion && d.Observacion.toLowerCase() !== 'pendiente' && d.Observacion.toLowerCase() !== '-- seleccionar --';
           const estaGestionadoExistente = existente.Observacion && existente.Observacion.toLowerCase() !== 'pendiente' && existente.Observacion.toLowerCase() !== '-- seleccionar --';
           
-          // Si el nuevo está gestionado y el anterior no, reemplazamos para que refleje el estado correcto
           if (estaGestionadoNuevo && !estaGestionadoExistente) {
             mapaUnicos.set(idTarea, d);
           }
@@ -314,7 +327,6 @@ function parsearFecha(fechaStr) {
       const presente = todosLosDatos.filter(d => esFechaManana(d['FECHA DE PROGRAMACIÓN']));
       const antiguos = todosLosDatos.filter(d => esFechaHoyOAnterior(d['FECHA DE PROGRAMACIÓN']));
 
-      // Aplicamos depuración de duplicados para limpiar el desorden visual
       let pendientesCrudos = presente.filter(d => !esGestado(d));
       let gestionadosCrudos = presente.filter(d => esGestado(d));
 
