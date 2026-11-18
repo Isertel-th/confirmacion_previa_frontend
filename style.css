@@ -2,7 +2,7 @@
   margin: 0; 
   padding: 0; 
   box-sizing: border-box; 
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+  font-family: 'Segoe UI', system-ui, sans-serif; 
 }
 
 body { 
@@ -108,6 +108,7 @@ button.guardar {
   background: #2e7d32; 
   border-radius: 4px; 
   min-width: 32px; 
+  color: white;
 }
 
 header { 
@@ -320,8 +321,8 @@ th:nth-child(11), td:nth-child(11) { width: 4%; text-align: center; }  /* GUARDA
   animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
 }
 
-.toast.success { background: #059669; }
-.toast.error { background: #dc2626; }
+.toast.success { background: #059669; color: white; }
+.toast.error { background: #dc2626; color: white; }
 
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
