@@ -108,7 +108,7 @@ button.guardar {
   background: #2e7d32; 
   border-radius: 4px; 
   min-width: 32px; 
-  color: white;
+  color: rgb(206, 0, 0);
 }
 
 header { 
