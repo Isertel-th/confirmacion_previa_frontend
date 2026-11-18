@@ -17,8 +17,82 @@
   </script>
 
   <link rel="stylesheet" href="style.css">
+  <style>
+    /* Estilos para la barra de carga */
+    .overlay-carga {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(2px);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .caja-carga {
+      background: #ffffff;
+      padding: 25px 30px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    }
+
+    .caja-carga h4 {
+      margin: 0 0 8px 0;
+      color: #1b5e20;
+      font-size: 16px;
+    }
+
+    .caja-carga p {
+      margin: 0 0 15px 0;
+      color: #555;
+      font-size: 13px;
+    }
+
+    .barra-progreso-contenedor {
+      width: 100%;
+      height: 10px;
+      background-color: #e0e0e0;
+      border-radius: 5px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .barra-progreso-animada {
+      width: 40%;
+      height: 100%;
+      background: linear-gradient(90deg, #2e7d32, #66bb6a);
+      border-radius: 5px;
+      position: absolute;
+      left: -40%;
+      animation: moverBarra 1.3s infinite ease-in-out;
+    }
+
+    @keyframes moverBarra {
+      0% { left: -40%; }
+      50% { left: 60%; }
+      100% { left: 100%; }
+    }
+  </style>
 </head>
 <body>
+  <!-- OVERLAY BARRA DE CARGA -->
+  <div id="overlayCarga" class="overlay-carga">
+    <div class="caja-carga">
+      <h4 id="tituloCarga">⏳ Procesando solicitud...</h4>
+      <p id="subtituloCarga">Por favor espera, sincronizando con Google Drive.</p>
+      <div class="barra-progreso-contenedor">
+        <div class="barra-progreso-animada"></div>
+      </div>
+    </div>
+  </div>
+
   <div id="modalTexto" class="modal-texto" onclick="cerrarModal(event)">
     <div class="modal-contenido" onclick="event.stopPropagation()">
       <h4 id="modalTitulo"></h4>
@@ -42,7 +116,7 @@
         Nota: La base de datos ya está guardada permanentemente en Google Drive. Usa este botón solo si deseas integrar nuevas tareas a las existentes.
       </p>
       <input type="file" id="archivoBase" accept=".xlsx">
-      <button onclick="subirArchivo('base')">Subir e Integrar</button>
+      <button id="btnSubirIntegrar" onclick="subirArchivo('base')">Subir e Integrar</button>
     </section>
 
     <!-- MENÚ DE PESTAÑAS -->
@@ -135,6 +209,17 @@
       { clave: 'Observacion', nombre: 'Observación' },
       { clave: 'ACCION', nombre: '✓' }
     ];
+
+    /* Funciones para controlar la barra de carga */
+    function mostrarCarga(titulo = '⏳ Procesando solicitud...', subtitulo = 'Por favor espera, no cierres ni recargues la página.') {
+      document.getElementById('tituloCarga').textContent = titulo;
+      document.getElementById('subtituloCarga').textContent = subtitulo;
+      document.getElementById('overlayCarga').style.display = 'flex';
+    }
+
+    function ocultarCarga() {
+      document.getElementById('overlayCarga').style.display = 'none';
+    }
 
     async function cargarDatos() {
       try {
@@ -232,7 +317,7 @@
       });
     }
 
-function parsearFecha(fechaStr) {
+    function parsearFecha(fechaStr) {
       if (!fechaStr) return null;
       if (fechaStr instanceof Date) {
         fechaStr.setHours(0, 0, 0, 0);
@@ -244,11 +329,9 @@ function parsearFecha(fechaStr) {
 
       let f = null;
 
-      // Si viene en formato YYYY-MM-DD o YYYY/MM/DD
       if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(soloFecha)) {
         f = new Date(soloFecha);
       } else {
-        // Formato MM/DD/YY (ej: 11/19/26 -> Mes 11, Día 19)
         const partes = soloFecha.split(/[-/]/);
         if (partes.length === 3) {
           const mes = parseInt(partes[0], 10) - 1;
@@ -447,6 +530,11 @@ function parsearFecha(fechaStr) {
         }
       });
 
+      mostrarCarga(
+        `💾 Guardando ${listaPayload.length} registro(s)...`,
+        'Tu orden se está procesando y guardando en la base de datos.'
+      );
+
       try {
         const res = await fetch(`${URL_BACKEND}/api/editar`, {
           method: 'PUT',
@@ -455,9 +543,11 @@ function parsearFecha(fechaStr) {
         });
 
         const data = await res.json();
+        await cargarDatos();
+        ocultarCarga();
         alert(`✅ ${data.mensaje}`);
-        cargarDatos();
       } catch (error) {
+        ocultarCarga();
         alert('Error al guardar los registros.');
       } finally {
         botonesGuardar.forEach(btn => {
@@ -501,17 +591,38 @@ function parsearFecha(fechaStr) {
       const input = document.getElementById('archivoBase');
       if (!input.files[0]) return alert('Selecciona un archivo Excel');
 
+      const btnSubir = document.getElementById('btnSubirIntegrar');
+      btnSubir.disabled = true;
+      btnSubir.style.opacity = '0.5';
+      btnSubir.style.cursor = 'not-allowed';
+
+      mostrarCarga(
+        '📤 Subiendo e integrando archivo...',
+        'Procesando el Excel y sincronizando los registros con Google Drive. Esto puede tardar unos segundos.'
+      );
+
       const form = new FormData();
       form.append('archivo', input.files[0]);
       form.append('tipo', tipo);
 
-      const res = await fetch(`${URL_BACKEND}/api/cargar-excel`, {
-        method: 'POST',
-        body: form
-      });
-      const data = await res.json();
-      alert(data.mensaje || 'Cargado');
-      cargarDatos();
+      try {
+        const res = await fetch(`${URL_BACKEND}/api/cargar-excel`, {
+          method: 'POST',
+          body: form
+        });
+        const data = await res.json();
+        input.value = ''; // Limpia el selector de archivo
+        await cargarDatos();
+        ocultarCarga();
+        alert(`✅ ${data.mensaje || 'Archivo integrado correctamente'}`);
+      } catch (error) {
+        ocultarCarga();
+        alert('Error al subir e integrar el archivo.');
+      } finally {
+        btnSubir.disabled = false;
+        btnSubir.style.opacity = '1';
+        btnSubir.style.cursor = 'pointer';
+      }
     }
 
     function cerrarSesion() {
