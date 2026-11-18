@@ -222,7 +222,7 @@
       });
     }
 
-    function parsearFecha(fechaStr) {
+function parsearFecha(fechaStr) {
       if (!fechaStr) return null;
       if (fechaStr instanceof Date) {
         fechaStr.setHours(0, 0, 0, 0);
@@ -230,7 +230,6 @@
       }
 
       const str = String(fechaStr).trim();
-      // Ignorar completamente cualquier hora separando por espacio (ej: "11/11/26 16:00" -> "11/11/26")
       const soloFecha = str.split(' ')[0];
 
       let f = null;
@@ -239,14 +238,13 @@
       if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(soloFecha)) {
         f = new Date(soloFecha);
       } else {
-        // Si viene en formato DD/MM/YYYY o DD/MM/YY (Formato latino de Excel)
+        // Formato MM/DD/YY (ej: 11/19/26 -> Mes 11, Día 19)
         const partes = soloFecha.split(/[-/]/);
         if (partes.length === 3) {
-          const dia = parseInt(partes[0], 10);
-          const mes = parseInt(partes[1], 10) - 1;
+          const mes = parseInt(partes[0], 10) - 1;
+          const dia = parseInt(partes[1], 10);
           let anio = parseInt(partes[2], 10);
 
-          // Convertir años de 2 dígitos (ej: 26) a 4 dígitos (2026)
           if (anio < 100) {
             anio += 2000;
           }
@@ -259,7 +257,6 @@
 
       if (!f || isNaN(f.getTime())) return null;
 
-      // Forzar siempre hora 00:00:00 para ignorar el tiempo completamente
       f.setHours(0, 0, 0, 0);
       return f;
     }
