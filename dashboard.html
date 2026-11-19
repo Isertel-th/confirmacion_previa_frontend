@@ -352,7 +352,6 @@
       );
     }
 
-    // Determina si la fecha es de MAÑANA
     function esFechaManana(fechaStr) {
       if (!fechaStr) return false;
       const f = parsearFecha(fechaStr);
@@ -365,7 +364,6 @@
       return esMismaFecha(f, manana);
     }
 
-    // Determina si la fecha es de HOY o ANTERIOR a hoy
     function esFechaHoyOAnterior(fechaStr) {
       if (!fechaStr) return false;
       const f = parsearFecha(fechaStr);
@@ -375,19 +373,6 @@
       hoy.setHours(0, 0, 0, 0);
 
       return f <= hoy;
-    }
-
-    // ✅ NUEVA: Determina si la fecha es FUTURA (después de mañana)
-    function esFechaFutura(fechaStr) {
-      if (!fechaStr) return false;
-      const f = parsearFecha(fechaStr);
-      if (!f || isNaN(f.getTime())) return false;
-
-      const manana = new Date();
-      manana.setDate(manana.getDate() + 1);
-      manana.setHours(0, 0, 0, 0);
-
-      return f > manana;
     }
 
     function esGestado(d) {
@@ -419,67 +404,35 @@
     }
 
     function renderizarTablas() {
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      
-      const manana = new Date();
-      manana.setDate(manana.getDate() + 1);
-      manana.setHours(0, 0, 0, 0);
+      const presente = todosLosDatos.filter(d => esFechaManana(d['FECHA DE PROGRAMACIÓN']));
+      const antiguos = todosLosDatos.filter(d => esFechaHoyOAnterior(d['FECHA DE PROGRAMACIÓN']));
 
-      // 📌 GRUPO 1: Mañana exactamente
-      const registrosManana = todosLosDatos.filter(d => 
-        esFechaManana(d['FECHA DE PROGRAMACIÓN'])
-      );
-      
-      // 📌 GRUPO 2: Hoy y días anteriores
-      const registrosAntiguos = todosLosDatos.filter(d => 
-        esFechaHoyOAnterior(d['FECHA DE PROGRAMACIÓN'])
-      );
-      
-      // 📌 GRUPO 3: Futuro (después de mañana)
-      const registrosFuturo = todosLosDatos.filter(d => 
-        esFechaFutura(d['FECHA DE PROGRAMACIÓN'])
-      );
+      let pendientesCrudos = presente.filter(d => !esGestado(d));
+      let gestionadosCrudos = presente.filter(d => esGestado(d));
 
-      // ====== MAÑANA ======
-      let pendientesCrudos = registrosManana.filter(d => !esGestado(d));
-      let gestionadosCrudos = registrosManana.filter(d => esGestado(d));
+      let antiguosPendientesCrudos = antiguos.filter(d => !esGestado(d));
+      let antiguosGestionadosCrudos = antiguos.filter(d => esGestado(d));
 
-      // ====== HOY Y ANTERIORES ======
-      let antiguosPendientesCrudos = registrosAntiguos.filter(d => !esGestado(d));
-      let antiguosGestionadosCrudos = registrosAntiguos.filter(d => esGestado(d));
-
-      // ====== FUTURO: Estas tareas NO deben aparecer en "Antiguos/Hoy" ======
-      // Solo las incluimos en sus propias secciones lógicas (si necesitas pestañas futuras)
-      // Por ahora: NO caen en ninguna de las 4 pestañas actuales → se mantienen pendientes para cuando llegue su fecha
-      const futuroPendientes = registrosFuturo.filter(d => !esGestado(d));
-      const futuroGestionados = registrosFuturo.filter(d => esGestado(d));
-
-      // Depurar duplicados
       let pendientes = depurarTareasUnicas(pendientesCrudos);
       let gestionados = depurarTareasUnicas(gestionadosCrudos);
       let antiguosPendientes = depurarTareasUnicas(antiguosPendientesCrudos);
       let antiguosGestionados = depurarTareasUnicas(antiguosGestionadosCrudos);
 
-      // Contadores
       document.getElementById('countPendientes').textContent = pendientes.length;
       document.getElementById('countGestionados').textContent = gestionados.length;
       document.getElementById('countAntiguosPendientes').textContent = antiguosPendientes.length;
       document.getElementById('countAntiguosGestionados').textContent = antiguosGestionados.length;
 
-      // Aplicar filtros
       pendientes = aplicarFiltroArray(pendientes, filtrosPendientes);
       gestionados = aplicarFiltroArray(gestionados, filtrosGestionados);
       antiguosPendientes = aplicarFiltroArray(antiguosPendientes, filtrosAntiguosPendientes);
       antiguosGestionados = aplicarFiltroArray(antiguosGestionados, filtrosAntiguosGestionados);
 
-      // Renderizar
       renderizarCuerpo('cuerpoTablaPendientes', pendientes, false);
       renderizarCuerpo('cuerpoTablaGestionados', gestionados, true);
       renderizarCuerpo('cuerpoTablaAntiguosPendientes', antiguosPendientes, false);
       renderizarCuerpo('cuerpoTablaAntiguosGestionados', antiguosGestionados, true);
     }
-
 
     function renderizarCuerpo(idCuerpo, datos, esGestionado) {
       const cuerpo = document.getElementById(idCuerpo);
