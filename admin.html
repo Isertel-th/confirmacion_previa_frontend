@@ -329,19 +329,30 @@
 
       let f = null;
 
+      // Formato ISO: YYYY-MM-DD
       if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(soloFecha)) {
         f = new Date(soloFecha);
-      } else {
+      }
+      // Formato DD/MM/AAAA o DD-MM-AAAA → MUY COMÚN en Google Sheets en Ecuador
+      else {
         const partes = soloFecha.split(/[-/]/);
         if (partes.length === 3) {
-          const mes = parseInt(partes[0], 10) - 1;
-          const dia = parseInt(partes[1], 10);
-          let anio = parseInt(partes[2], 10);
-
-          if (anio < 100) {
-            anio += 2000;
+          // DETECCIÓN INTELIGENTE: Si el primer número es > 12, asumimos DD/MM/AAAA
+          const p0 = parseInt(partes[0], 10);
+          const p1 = parseInt(partes[1], 10);
+          let anio, mes, dia;
+          
+          if (p0 > 12) {
+            dia = p0;
+            mes = p1 - 1;
+            anio = parseInt(partes[2], 10);
+          } else {
+            mes = p0 - 1;
+            dia = p1;
+            anio = parseInt(partes[2], 10);
           }
-
+          
+          if (anio < 100) anio += 2000;
           f = new Date(anio, mes, dia);
         } else {
           f = new Date(soloFecha);
@@ -349,10 +360,10 @@
       }
 
       if (!f || isNaN(f.getTime())) return null;
-
       f.setHours(0, 0, 0, 0);
       return f;
     }
+
 
     function esMismaFecha(f1, f2) {
       return (
@@ -367,12 +378,17 @@
       const f = parsearFecha(fechaStr);
       if (!f || isNaN(f.getTime())) return false;
 
-      const manana = new Date();
-      manana.setDate(manana.getDate() + 1);
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      
+      const manana = new Date(hoy);
+      manana.setDate(hoy.getDate() + 1);
       manana.setHours(0, 0, 0, 0);
 
+      // ✅ Ahora compara correctamente: ¿es exactamente mañana?
       return esMismaFecha(f, manana);
     }
+
 
     function esFechaHoyOAnterior(fechaStr) {
       if (!fechaStr) return false;
