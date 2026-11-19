@@ -307,50 +307,42 @@
       });
     }
 
-  function parsearFecha(fechaStr) {
+    function parsearFecha(fechaStr) {
       if (!fechaStr) return null;
       if (fechaStr instanceof Date) {
-          // Si ya es un objeto Date, nos aseguramos que la hora sea 00:00:00
-          fechaStr.setHours(0, 0, 0, 0);
-          return fechaStr;
+        fechaStr.setHours(0, 0, 0, 0);
+        return fechaStr;
       }
 
       const str = String(fechaStr).trim();
-      // Intentamos extraer solo la parte de la fecha si hay hora presente
       const soloFecha = str.split(' ')[0];
 
       let f = null;
 
-      // Intentamos parsear formatos comunes como YYYY-MM-DD o YYYY/MM/DD
       if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(soloFecha)) {
-          f = new Date(soloFecha);
+        f = new Date(soloFecha);
       } else {
-          // Intentamos parsear formatos como DD/MM/YYYY o DD-MM-YYYY
-          const partes = soloFecha.split(/[-/]/);
-          if (partes.length === 3) {
-              // Aseguramos que el mes sea el correcto (los meses en JS son 0-indexados)
-              const dia = parseInt(partes[0], 10);
-              const mes = parseInt(partes[1], 10) - 1; // Restamos 1 al mes
-              let anio = parseInt(partes[2], 10);
+        const partes = soloFecha.split(/[-/]/);
+        if (partes.length === 3) {
+          const mes = parseInt(partes[0], 10) - 1;
+          const dia = parseInt(partes[1], 10);
+          let anio = parseInt(partes[2], 10);
 
-              // Ajustamos el año si es de dos dígitos (ej. 26 -> 2026)
-              if (anio < 100) {
-                  anio += 2000;
-              }
-              f = new Date(anio, mes, dia);
-          } else {
-              // Si no coincide con los formatos esperados, intentamos con el constructor directo de Date
-              f = new Date(soloFecha);
+          if (anio < 100) {
+            anio += 2000;
           }
+
+          f = new Date(anio, mes, dia);
+        } else {
+          f = new Date(soloFecha);
+        }
       }
 
-      // Verificamos si la fecha es válida
       if (!f || isNaN(f.getTime())) return null;
 
-      // Establecemos la hora a 00:00:00 para comparaciones consistentes
       f.setHours(0, 0, 0, 0);
       return f;
-  }
+    }
 
     function esMismaFecha(f1, f2) {
       return (
@@ -360,40 +352,28 @@
       );
     }
 
-// Función para verificar si una fecha es "mañana"
-function esFechaManana(fechaStr) {
-    if (!fechaStr) return false;
-    const f = parsearFecha(fechaStr); // Usamos la función parsearFecha mejorada
-    if (!f || isNaN(f.getTime())) return false;
+    function esFechaManana(fechaStr) {
+      if (!fechaStr) return false;
+      const f = parsearFecha(fechaStr);
+      if (!f || isNaN(f.getTime())) return false;
 
-    const manana = new Date();
-    manana.setDate(manana.getDate() + 1);
-    manana.setHours(0, 0, 0, 0); // Comparamos solo la parte de la fecha
+      const manana = new Date();
+      manana.setDate(manana.getDate() + 1);
+      manana.setHours(0, 0, 0, 0);
 
-    return esMismaFecha(f, manana); // Compara día, mes y año
-}
+      return esMismaFecha(f, manana);
+    }
 
-// Función para verificar si una fecha es "hoy o anterior"
-function esFechaHoyOAnterior(fechaStr) {
-    if (!fechaStr) return false;
-    const f = parsearFecha(fechaStr); // Usamos la función parsearFecha mejorada
-    if (!f || isNaN(f.getTime())) return false;
+    function esFechaHoyOAnterior(fechaStr) {
+      if (!fechaStr) return false;
+      const f = parsearFecha(fechaStr);
+      if (!f || isNaN(f.getTime())) return false;
 
-    const hoy = new Date();
-    hoy.setHours(0, 0, 0, 0); // Comparamos solo la parte de la fecha
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
 
-    return f <= hoy; // Compara si la fecha programada es menor o igual a la fecha actual
-}
-
-// Función auxiliar para comparar si dos objetos Date representan el mismo día
-function esMismaFecha(f1, f2) {
-    return (
-        f1.getFullYear() === f2.getFullYear() &&
-        f1.getMonth() === f2.getMonth() &&
-        f1.getDate() === f2.getDate()
-    );
-}
-
+      return f <= hoy;
+    }
 
     function esGestado(d) {
       const obs = (d.Observacion || '').toString().trim().toLowerCase();
